@@ -1,0 +1,12 @@
+:root {
+  --radius: 0.75rem;
+  --background: oklch(0.99 0.01 290);
+  --foreground: oklch(0.18 0.04 290);
+  --primary: oklch(0.58 0.25 275); /* Electric violet-indigo */
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.92 0.09 185); /* Bright mint-cyan */
+  --secondary-foreground: oklch(0.2 0.06 185);
+  --accent: oklch(0.9 0.14 340); /* Soft magenta-pink */
+  --accent-foreground: oklch(0.22 0.08 340);
+  --border: oklch(0.88 0.04 290);
+}
