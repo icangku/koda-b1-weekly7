@@ -1,53 +1,62 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-export function RecentTransactionsCard({ transactions = [], onViewAll }) {
+export function RecentTransactionsCard({ activities = [], onViewAll }) {
   return (
-    <Card className="rounded-2xl border-0 bg-white p-2 shadow-2xs">
-      <CardHeader className="flex flex-row items-center justify-between pb-4">
-        <CardTitle className="text-lg font-bold text-slate-900">
-          Transaksi Terbaru
-        </CardTitle>
+    <Card className="rounded-2xl border-slate-200/70 bg-white py-6 shadow-2xs">
+      <div className="mb-4 flex items-start justify-between gap-4 px-6">
+        <div>
+          <h2 className="text-base font-bold text-slate-900">
+            Aktivitas terakhir
+          </h2>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Pantau pergerakan uang di dompetmu
+          </p>
+        </div>
+
         <button
           type="button"
           onClick={onViewAll}
-          className="text-sm font-medium text-blue-600 hover:underline"
+          className="text-xs font-semibold text-[#0d5c52] hover:underline"
         >
-          Lihat semua transaksi
+          Lihat semua →
         </button>
-      </CardHeader>
+      </div>
 
-      <CardContent className="divide-y divide-slate-100">
-        {transactions.map((tx) => (
+      <CardContent className="divide-y divide-slate-100 px-6 pb-0">
+        {activities.map((item) => (
           <div
-            key={tx.id}
-            className="grid grid-cols-1 items-center gap-2 py-4 first:pt-2 last:pb-2 sm:grid-cols-12 sm:gap-4"
+            key={item.id}
+            className="grid grid-cols-1 items-center gap-2 py-3.5 first:pt-2 last:pb-1 sm:grid-cols-12 sm:gap-4"
           >
-            <div className="font-semibold text-slate-900 sm:col-span-5">
-              {tx.title}
+            <div className="sm:col-span-5">
+              <p className="text-sm font-semibold text-slate-900">
+                {item.title}
+              </p>
+              <p className="mt-0.5 text-[11px] text-slate-400">
+                {item.timestamp}
+              </p>
             </div>
 
-            <div className="text-sm text-slate-400 sm:col-span-3">
-              {tx.date}
+            <div className="text-xs text-slate-500 sm:col-span-3">
+              {item.category}
             </div>
 
-            <div
-              className={cn(
-                "text-sm font-bold sm:col-span-2 sm:text-right",
-                tx.isPositive ? "text-emerald-600" : "text-slate-900",
-              )}
-            >
-              {tx.amountFormatted}
+            <div className="text-xs font-bold text-slate-900 sm:col-span-2 sm:text-right">
+              {item.amountFormatted}
             </div>
 
             <div className="sm:col-span-2 sm:text-right">
-              <Badge
-                variant="secondary"
-                className="rounded-md bg-emerald-100/80 px-2.5 py-1 text-[11px] font-bold tracking-wide text-emerald-700 uppercase hover:bg-emerald-100/80"
+              <span
+                className={cn(
+                  "text-xs font-semibold",
+                  item.status === "Berhasil"
+                    ? "text-emerald-700"
+                    : "text-slate-600",
+                )}
               >
-                {tx.status}
-              </Badge>
+                {item.status}
+              </span>
             </div>
           </div>
         ))}

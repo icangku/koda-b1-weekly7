@@ -1,18 +1,27 @@
-export function TopHeader({ userName, initials }) {
+export function TopHeader({
+  eyebrow = "Personal Wallet",
+  title = "Beranda",
+  subtitle = "Selasa, 17 November 2026 • Selamat datang kembali.",
+  userName = "Nadia",
+  initials = "NP",
+}) {
   return (
     <header className="flex flex-wrap items-start justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          Selamat datang, {userName} <span aria-hidden="true">👋</span>
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Kelola uangmu dengan aman, cepat, dan nyaman.
+        <p className="text-[11px] font-semibold tracking-widest text-[#0d5c52] uppercase">
+          {eyebrow}
         </p>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
+          {title}
+        </h1>
+        <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
       </div>
 
-      <div className="flex items-center gap-2.5 rounded-full border border-slate-200/80 bg-white px-3.5 py-1.5 shadow-2xs">
-        <span className="text-xs font-bold text-slate-900">{initials}</span>
-        <span className="text-sm font-medium text-slate-700">{userName}</span>
+      <div className="flex items-center gap-2.5 rounded-full border border-slate-200/90 bg-white py-1 pr-3.5 pl-1.5 shadow-2xs">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0d5c52] text-[11px] font-bold text-white">
+          {initials}
+        </span>
+        <span className="text-xs font-semibold text-slate-800">{userName}</span>
       </div>
     </header>
   );
