@@ -1,8 +1,10 @@
 using Ewallet.Application.Dtos.AuditLogs;
 using Ewallet.Application.Dtos.Common;
+using Ewallet.Application.Interfaces;
 using Ewallet.Domain.Entities;
+using Microsoft.AspNetCore.Http;
 
-namespace Ewallet.Services;
+namespace Ewallet.Application.Services;
 
 public record AuditEntry(
     string Action,

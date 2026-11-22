@@ -1,10 +1,10 @@
-using Ewallet.Dtos.Common;
-using Ewallet.Dtos.History;
-using Ewallet.Dtos.Wallets;
-using Ewallet.Exceptions;
-using Ewallet.Repositories;
+using Ewallet.Application.Dtos.Common;
+using Ewallet.Application.Dtos.History;
+using Ewallet.Application.Dtos.Wallets;
+using Ewallet.Application.Exceptions;
+using Ewallet.Application.Interfaces;
 
-namespace Ewallet.Services;
+namespace Ewallet.Application.Services;
 
 public interface IWalletService
 {

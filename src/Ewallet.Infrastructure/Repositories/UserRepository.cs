@@ -1,21 +1,10 @@
+using Ewallet.Application.Dtos.Users;
+using Ewallet.Application.Interfaces;
 using Ewallet.Data;
-using Ewallet.Dtos.Users;
-using Ewallet.Models;
+using Ewallet.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ewallet.Repositories;
-
-public interface IUserRepository
-{
-    Task<User?> GetByIdAsync(long id, CancellationToken ct = default);
-    Task<bool> UsernameExistsAsync(string username, CancellationToken ct = default);
-    Task<bool> EmailExistsAsync(string email, long? excludeUserId = null, CancellationToken ct = default);
-    Task<bool> PhoneExistsAsync(string phone, long? excludeUserId = null, CancellationToken ct = default);
-    void Add(User user);
-
-    Task<List<UserResponse>> GetAllAsync(CancellationToken ct = default);
-    Task<UserResponse?> GetResponseByIdAsync(long id, CancellationToken ct = default);
-}
 
 public class UserRepository(AppDbContext db) : IUserRepository
 {

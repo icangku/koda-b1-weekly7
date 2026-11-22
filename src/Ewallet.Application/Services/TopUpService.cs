@@ -1,10 +1,10 @@
-using Ewallet.Dtos.TopUps;
-using Ewallet.Exceptions;
-using Ewallet.Models;
-using Ewallet.Repositories;
-using Ewallet.Utils;
-
-namespace Ewallet.Services;
+using Ewallet.Application.Dtos.TopUps;
+using Ewallet.Application.Exceptions;
+using Ewallet.Application.Interfaces;
+using Ewallet.Application.Services;
+using Ewallet.Application.Utils;
+using Ewallet.Domain.Entities;
+namespace Ewallet.Application.Services;
 
 public interface ITopUpService
 {
@@ -32,7 +32,7 @@ public class TopUpService(
     var method = await paymentMethods.GetActiveByIdAsync(request.PaymentMethodId, ct) ?? throw new PaymentMethodNotFoundException();
 
     var now = DateTime.UtcNow;
-    var trx = new Transaction
+    var trx = new Domain.Entities.Transaction
     {
       ReferenceNo = ReferenceNumber.New("TOP", now),
       SenderWalletId = null,

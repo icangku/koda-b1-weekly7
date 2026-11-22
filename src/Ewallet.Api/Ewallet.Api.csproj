@@ -19,7 +19,7 @@
     <PackageReference Include="Scalar.AspNetCore" Version="2.20.0" />
     
     <ProjectReference Include="..\Ewallet.Application\Ewallet.Application.csproj" />
-    <ProjectReference Include="..\Ewallet.Domain\Ewallet.Infrastructure.csproj" />
+    <ProjectReference Include="..\Ewallet.Infrastructure\Ewallet.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="appsettings.json">

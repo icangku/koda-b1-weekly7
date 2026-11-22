@@ -1,8 +1,9 @@
-using Ewallet.Dtos.Transfers;
-using Ewallet.Exceptions;
-using Ewallet.Models;
-using Ewallet.Repositories;
-using Ewallet.Utils;
+using Ewallet.Application.Dtos.Transfers;
+using Ewallet.Application.Exceptions;
+using Ewallet.Application.Interfaces;
+using Ewallet.Application.Services;
+using Ewallet.Application.Utils;
+using Ewallet.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ewallet.Services;

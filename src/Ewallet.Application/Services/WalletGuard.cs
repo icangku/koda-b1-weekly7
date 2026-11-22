@@ -1,7 +1,8 @@
-using Ewallet.Exceptions;
-using Ewallet.Models;
 
-namespace Ewallet.Services;
+using Ewallet.Application.Exceptions;
+using Ewallet.Domain.Entities;
+
+namespace Ewallet.Application.Services;
 
 internal static class WalletGuard
 {

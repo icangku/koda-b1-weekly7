@@ -1,12 +1,10 @@
-// Services/UserService.cs
-using Ewallet.Dtos.Users;
-using Ewallet.Exceptions;
-using Ewallet.Models;
-using Ewallet.Repositories;
-using Microsoft.Data.SqlClient;
+using Ewallet.Application.Dtos.Users;
+using Ewallet.Application.Exceptions;
+using Ewallet.Application.Interfaces;
+using Ewallet.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace Ewallet.Services;
+namespace Ewallet.Application.Services;
 
 public interface IUserService
 {
@@ -92,7 +90,7 @@ public class UserService(IUserRepository users, IWalletRepository wallets, IUnit
     {
       await uow.SaveChangesAsync(ct);
     }
-    catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 })
+    catch (DbUpdateException ex)
     {
       throw new ConflictException("Username, email, nomor telepon, atau nomor wallet sudah digunakan.");
     }

@@ -1,7 +1,7 @@
-using Ewallet.Dtos.PaymentMethods;
-using Ewallet.Repositories;
+using Ewallet.Application.Dtos.PaymentMethods;
+using Ewallet.Application.Interfaces;
 
-namespace Ewallet.Services;
+namespace Ewallet.Application.Services;
 
 public interface IPaymentMethodService
 {
