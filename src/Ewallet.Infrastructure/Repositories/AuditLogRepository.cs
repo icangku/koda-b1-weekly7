@@ -2,6 +2,7 @@ using Ewallet.Application.Dtos.AuditLogs;
 using Ewallet.Application.Dtos.Common;
 using Ewallet.Data;
 using Ewallet.Domain.Entities;
+using Ewallet.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ewallet.Infrastructure.Repositories;
