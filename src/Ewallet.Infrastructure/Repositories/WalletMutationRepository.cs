@@ -1,16 +1,12 @@
 using Ewallet.Application.Dtos.Common;
 using Ewallet.Application.Dtos.History;
+using Ewallet.Application.Interfaces;
 using Ewallet.Data;
 using Ewallet.Domain.Entities;
+using Ewallet.Repositories;
 using Microsoft.EntityFrameworkCore;
 
-namespace Ewallet.Repositories;
-
-public interface IWalletMutationRepository
-{
-  void Add(WalletMutation mutation);
-  Task<PagedResponse<MutationResponse>> GetHistoryAsync(long walletId, HistoryQuery query, CancellationToken ct = default);
-}
+namespace Ewallet.Infrastructure.Repositories;
 
 public class WalletMutationRepository(AppDbContext db) : IWalletMutationRepository
 {

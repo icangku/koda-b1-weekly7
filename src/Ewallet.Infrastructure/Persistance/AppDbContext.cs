@@ -1,15 +1,15 @@
 using Ewallet.Domain.Entities;
 using Ewallet.Infrastructure.Persistance;
-using Ewallet.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ewallet.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityDbContext
 {
   public AppDbContext(DbContextOptions<AppDbContext> options) : base(options){}
 
-  public DbSet<User> Users => Set<User>();
+  // public DbSet<User> Users => Set<User>();
   public DbSet<Wallet> Wallets => Set<Wallet>();
   public DbSet<Transaction> Transactions => Set<Transaction>();
   public DbSet<WalletMutation> WalletMutations => Set<WalletMutation>();

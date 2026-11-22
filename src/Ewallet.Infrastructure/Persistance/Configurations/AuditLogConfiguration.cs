@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Ewallet.Domain.Entities;
+using Ewallet.Infrastructure.Identity;
 
 namespace Ewallet.Infrastructure.Persistance.Configurations;
 
@@ -18,7 +19,8 @@ public class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
 
     b.HasIndex(a => new { a.ActorUserId, a.CreatedAtUtc }).IsDescending(false, true);
 
-    b.HasOne(a => a.ActorUser).WithMany(u => u.AuditLogs)
+    b.HasOne<ApplicationUser>()
+      .WithMany()
       .HasForeignKey(a => a.ActorUserId).OnDelete(DeleteBehavior.Restrict);
 
     b.HasOne(a => a.Transaction).WithMany()

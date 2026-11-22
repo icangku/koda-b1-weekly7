@@ -1,4 +1,5 @@
 using Ewallet.Domain.Entities;
+using Ewallet.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -19,8 +20,8 @@ public class WalletConfiguration : IEntityTypeConfiguration<Wallet>
 
     b.HasIndex(w => w.WalletNumber).IsUnique();
 
-    b.HasOne(w => w.User)
-      .WithOne(u => u.Wallet)
+    b.HasOne<ApplicationUser>()
+      .WithOne()
       .HasForeignKey<Wallet>(w => w.UserId)
       .OnDelete(DeleteBehavior.Restrict);
   }

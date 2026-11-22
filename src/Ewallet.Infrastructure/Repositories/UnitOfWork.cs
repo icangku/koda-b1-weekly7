@@ -1,22 +1,22 @@
+using Ewallet.Application.Exceptions;
+using Ewallet.Application.Interfaces;
 using Ewallet.Data;
-using Microsoft.EntityFrameworkCore.Storage;
+using Ewallet.Infrastructure.Persistance;
+using Microsoft.EntityFrameworkCore;
 
 namespace Ewallet.Infrastructure.Repositories;
 
-public interface IUnitOfWork
-{
-  Task<int> SaveChangesAsync(CancellationToken ct = default);
-  Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken ct = default);
-  void ClearChangeTracker();
-}
-
 public class UnitOfWork(AppDbContext db) : IUnitOfWork
 {
-  public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken ct = default)
-    => db.Database.BeginTransactionAsync(ct);
+    public async Task<IDbTransaction> BeginTransactionAsync(CancellationToken ct = default)
+        => new EfDbTransaction(await db.Database.BeginTransactionAsync(ct));
 
-  public Task<int> SaveChangesAsync(CancellationToken ct = default)
-    => db.SaveChangesAsync(ct);
+    public async Task<int> SaveChangesAsync(CancellationToken ct = default)
+    {
+        try { return await db.SaveChangesAsync(ct); }
+        catch (DbUpdateConcurrencyException ex) { throw new ConcurrencyConflictException(); }
+        catch (DbUpdateException ex)            { throw new DataConstraintException(); }
+    }
 
-  public void ClearChangeTracker() => db.ChangeTracker.Clear();
+    public void DiscardPendingChanges() => db.ChangeTracker.Clear();
 }
