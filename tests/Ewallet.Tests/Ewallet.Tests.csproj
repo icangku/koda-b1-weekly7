@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Ewallet\Ewallet.Console.csproj" />
+    <ProjectReference Include="..\..\src\Ewallet.Api\Ewallet.Console.csproj" />
   </ItemGroup>
 
 </Project>
