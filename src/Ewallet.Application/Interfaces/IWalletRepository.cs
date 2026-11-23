@@ -12,4 +12,5 @@ public interface IWalletRepository
   Task<bool> WalletNumberExistsAsync(string walletNumber, CancellationToken ct = default);
   Task<WalletResponse?> GetInfoAsync(long id, CancellationToken ct = default);
   void SetExpectedRowVersion(Wallet wallet, byte[] rowVersion);
+  void Add(Wallet wallet);
 }

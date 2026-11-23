@@ -39,4 +39,6 @@ public class WalletRepository(AppDbContext db) : IWalletRepository
 
   public void SetExpectedRowVersion(Wallet wallet, byte[] rowVersion)
     => db.Entry(wallet).Property(w => w.RowVersion).OriginalValue = rowVersion;
+
+  public void Add(Wallet wallet) => db.Wallets.Add(wallet);
 }

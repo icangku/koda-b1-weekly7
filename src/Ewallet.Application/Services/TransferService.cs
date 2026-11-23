@@ -14,6 +14,7 @@ public interface ITransferService
 
 public class TransferService(
     IWalletRepository wallets,
+    IUserRepository users,
     ITransactionRepository transactions,
     IAuditLogService audit,
     IUnitOfWork uow) : ITransferService
@@ -42,9 +43,11 @@ public class TransferService(
         ?? throw new WalletNotFoundException("Wallet penerima tidak ditemukan.");
 
       if (sender.Id == receiver.Id) throw new SelfTransferException();
+      var ownerStatusReceiver = await users.GetStatusByIdAsync(receiver.UserId, ct) ?? throw new UserNotFoundException();
+      var ownerStatusSender = await users.GetStatusByIdAsync(sender.UserId, ct) ?? throw new UserNotFoundException();
       WalletGuard.EnsureValidAmount(request.Amount);
-      WalletGuard.EnsureActive(sender, "pengirim");
-      WalletGuard.EnsureActive(receiver, "penerima");
+      WalletGuard.EnsureActive(sender, ownerStatusSender, "pengirim");
+      WalletGuard.EnsureActive(receiver, ownerStatusReceiver, "penerima");
       if (sender.Balance < request.Amount) throw new InsufficientBalanceException();
 
       var now = DateTime.UtcNow;

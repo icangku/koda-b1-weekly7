@@ -6,12 +6,12 @@ namespace Ewallet.Application.Services;
 
 internal static class WalletGuard
 {
-  public static void EnsureActive(Wallet wallet, string role)
+  public static void EnsureActive(Wallet wallet, UserStatus ownerStatus, string role)
   {
     if (wallet.Status != WalletStatus.Active)
       throw new WalletInactiveException($"Wallet {role} berstatus {wallet.Status.ToString().ToUpperInvariant()}.");
-    // if (wallet.User is { Status: not UserStatus.Active })
-    //   throw new WalletInactiveException($"Pemilik wallet {role} berstatus {wallet.User.Status.ToString().ToUpperInvariant()}.");
+    if (ownerStatus != UserStatus.Active)
+      throw new WalletInactiveException($"Pemilik wallet {role} berstatus {ownerStatus.ToString().ToUpperInvariant()}.");
   }
 
   public static void EnsureValidAmount(decimal amount)

@@ -15,6 +15,7 @@ public interface ITopUpService
 
 public class TopUpService(
     IWalletRepository wallets,
+    IUserRepository users,
     IPaymentMethodRepository paymentMethods,
     ITransactionRepository transactions,
     ITopUpRequestRepository topUps,
@@ -28,7 +29,8 @@ public class TopUpService(
   {
     WalletGuard.EnsureValidAmount(request.Amount);
     var wallet = await wallets.GetByIdAsync(request.WalletId, ct) ?? throw new WalletNotFoundException();
-    WalletGuard.EnsureActive(wallet, "tujuan");
+    var ownerStatus = await users.GetStatusByIdAsync(wallet.UserId, ct) ?? throw new UserNotFoundException();
+    WalletGuard.EnsureActive(wallet, ownerStatus, "tujuan");
     var method = await paymentMethods.GetActiveByIdAsync(request.PaymentMethodId, ct) ?? throw new PaymentMethodNotFoundException();
 
     var now = DateTime.UtcNow;
@@ -97,7 +99,8 @@ public class TopUpService(
         || trx.Amount != topUp.Amount || trx.Status != TransactionStatus.Pending)
       throw new ConflictException("Data top up tidak konsisten dengan transaksinya.");
 
-    WalletGuard.EnsureActive(wallet, "tujuan");
+    var ownerStatus = await users.GetStatusByIdAsync(wallet.UserId, ct) ?? throw new UserNotFoundException();
+    WalletGuard.EnsureActive(wallet, ownerStatus, "tujuan");
 
     var before = wallet.Balance;
     wallet.Balance = before + topUp.Amount;
