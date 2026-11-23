@@ -10,8 +10,8 @@ internal static class WalletGuard
   {
     if (wallet.Status != WalletStatus.Active)
       throw new WalletInactiveException($"Wallet {role} berstatus {wallet.Status.ToString().ToUpperInvariant()}.");
-    if (wallet.User is { Status: not UserStatus.Active })
-      throw new WalletInactiveException($"Pemilik wallet {role} berstatus {wallet.User.Status.ToString().ToUpperInvariant()}.");
+    // if (wallet.User is { Status: not UserStatus.Active })
+    //   throw new WalletInactiveException($"Pemilik wallet {role} berstatus {wallet.User.Status.ToString().ToUpperInvariant()}.");
   }
 
   public static void EnsureValidAmount(decimal amount)

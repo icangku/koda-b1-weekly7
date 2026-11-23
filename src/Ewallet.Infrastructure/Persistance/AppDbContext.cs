@@ -1,11 +1,13 @@
 using Ewallet.Domain.Entities;
+using Ewallet.Infrastructure.Identity;
 using Ewallet.Infrastructure.Persistance;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace Ewallet.Data;
+namespace Ewallet.Infrastructure.Persistance;
 
-public class AppDbContext : IdentityDbContext
+public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<long>, long>
 {
   public AppDbContext(DbContextOptions<AppDbContext> options) : base(options){}
 
@@ -17,7 +19,10 @@ public class AppDbContext : IdentityDbContext
   public DbSet<TopUpRequest> TopUpRequests => Set<TopUpRequest>();
   public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
-  protected override void OnModelCreating(ModelBuilder modelBuilder) => modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+  protected override void OnModelCreating(ModelBuilder modelBuilder) {
+    base.OnModelCreating(modelBuilder); 
+    modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+  }
   protected override void ConfigureConventions(ModelConfigurationBuilder cb)
   {
     cb.Properties<UserStatus>().HaveConversion<UpperCaseEnumConverter<UserStatus>>().HaveMaxLength(20).AreUnicode(false);

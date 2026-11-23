@@ -12,7 +12,5 @@ public class AuditLog
   public string? Description {get; set;}
   public string? CorrelationId {get; set;}
   public DateTime CreatedAtUtc {get; set;}
-  
-  public User? ActorUser {get; set;}
   public Transaction? Transaction {get; set;}
 }

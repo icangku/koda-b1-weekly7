@@ -2,7 +2,6 @@ using Ewallet.Application.Dtos.AuditLogs;
 using Ewallet.Application.Dtos.Common;
 using Ewallet.Application.Interfaces;
 using Ewallet.Domain.Entities;
-using Microsoft.AspNetCore.Http;
 
 namespace Ewallet.Application.Services;
 
@@ -22,7 +21,7 @@ public interface IAuditLogService
   Task<PagedResponse<AuditLogResponse>> GetAsync(AuditLogQuery query, CancellationToken ct = default);
 }
 
-public class AuditLogService(IAuditLogRepository logs, IUnitOfWork uow, IHttpContextAccessor http) : IAuditLogService
+public class AuditLogService(IAuditLogRepository logs, IUnitOfWork uow, ICurrentUser currentUser) : IAuditLogService
 {
   public void Record(AuditEntry e) => logs.Add(new AuditLog
   {
@@ -33,13 +32,13 @@ public class AuditLogService(IAuditLogRepository logs, IUnitOfWork uow, IHttpCon
     ActorUserId = e.ActorUserId,
     TransactionId = e.TransactionId,
     Description = e.Description is { Length: > 500 } d ? d[..500] : e.Description,
-    CorrelationId = http.HttpContext?.TraceIdentifier,
+    CorrelationId = currentUser.CorrelationId,
     CreatedAtUtc = DateTime.UtcNow,
   });
 
   public async Task RecordIndependentAsync(AuditEntry entry)
   {
-    uow.ClearChangeTracker();
+    uow.DiscardPendingChanges();
     Record(entry);
     await uow.SaveChangesAsync(CancellationToken.None);
   }

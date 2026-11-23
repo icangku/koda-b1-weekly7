@@ -1,5 +1,5 @@
-using Ewallet.Dtos.Transfers;
-using Ewallet.Services;
+using Ewallet.Application.Dtos.Transfers;
+using Ewallet.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ewallet.Controllers;

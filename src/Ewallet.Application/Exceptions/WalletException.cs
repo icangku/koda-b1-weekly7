@@ -49,10 +49,3 @@ public class ConflictException : WalletException
 {
     public ConflictException(string message) : base(message) { }
 }
-
-/// <summary>Dev/Testing only: thrown after writes but before commit to demonstrate rollback.</summary>
-public class SimulatedFailureException : Exception
-{
-    public SimulatedFailureException()
-        : base("Simulasi kegagalan setelah saldo diubah. Seluruh perubahan dibatalkan (rollback).") { }
-}

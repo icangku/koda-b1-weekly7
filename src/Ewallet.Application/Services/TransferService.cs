@@ -4,9 +4,8 @@ using Ewallet.Application.Interfaces;
 using Ewallet.Application.Services;
 using Ewallet.Application.Utils;
 using Ewallet.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
-namespace Ewallet.Services;
+namespace Ewallet.Application.Services;
 
 public interface ITransferService
 {
@@ -95,7 +94,7 @@ public class TransferService(
       await LogRejectedAsync(sender, request, AuditOutcome.Rejected, ex.Message);
       throw;
     }
-    catch (DbUpdateConcurrencyException)
+    catch (ConcurrencyConflictException)
     {
       await LogRejectedAsync(sender, request, AuditOutcome.Failed, "Konflik concurrency: saldo wallet diubah proses lain. Transfer dibatalkan.");
       throw;
@@ -105,7 +104,7 @@ public class TransferService(
       await LogRejectedAsync(sender, request, AuditOutcome.Failed, ex.Message);
       throw;
     }
-    catch (DbUpdateException)
+    catch (DataConstraintException)
     {
       await LogRejectedAsync(sender, request, AuditOutcome.Failed, "Transfer ditolak oleh constraint database dan dibatalkan.");
       throw;

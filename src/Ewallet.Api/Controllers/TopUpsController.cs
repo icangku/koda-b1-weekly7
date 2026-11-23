@@ -1,5 +1,5 @@
-using Ewallet.Dtos.TopUps;
-using Ewallet.Services;
+using Ewallet.Application.Dtos.TopUps;
+using Ewallet.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ewallet.Controllers;

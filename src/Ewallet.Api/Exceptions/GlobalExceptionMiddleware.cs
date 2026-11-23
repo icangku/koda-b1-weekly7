@@ -1,8 +1,8 @@
 using System.Net;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
+using Ewallet.Application.Exceptions;
 
-namespace Ewallet.Exceptions;
+namespace Ewallet.Api.Exceptions;
 
 public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
 {
@@ -24,17 +24,17 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
 		{
 			WalletNotFoundException or UserNotFoundException or PaymentMethodNotFoundException or TopUpNotFoundException
 				=> HttpStatusCode.NotFound,
-			ConflictException or DbUpdateConcurrencyException => HttpStatusCode.Conflict,
+			ConflictException or ConcurrencyConflictException => HttpStatusCode.Conflict,
 			WalletException => HttpStatusCode.BadRequest,
-			DbUpdateException => HttpStatusCode.Conflict,              // constraint / unique violation
+			DataConstraintException => HttpStatusCode.Conflict,
 			_ => HttpStatusCode.InternalServerError
 		};
 
 		var message = ex switch
 		{
 			WalletException or SimulatedFailureException => ex.Message,
-			DbUpdateConcurrencyException => "Data wallet telah diubah oleh proses lain. Tidak ada perubahan yang disimpan, silakan coba lagi.",
-			DbUpdateException => "Perubahan ditolak oleh constraint database. Tidak ada perubahan yang disimpan.",
+			ConcurrencyConflictException => "Data wallet telah diubah oleh proses lain. Tidak ada perubahan yang disimpan, silakan coba lagi.",
+			DataConstraintException => "Perubahan ditolak oleh constraint database. Tidak ada perubahan yang disimpan.",
 			_ => "Terjadi kesalahan pada server."
 		};
 

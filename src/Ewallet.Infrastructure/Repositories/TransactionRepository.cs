@@ -3,6 +3,7 @@ using Ewallet.Application.Dtos.History;
 using Ewallet.Application.Interfaces;
 using Ewallet.Data;
 using Ewallet.Domain.Entities;
+using Ewallet.Infrastructure.Persistance;
 using Ewallet.Repositories;
 using Microsoft.EntityFrameworkCore;
 

@@ -2,6 +2,7 @@ using Ewallet.Application.Dtos.PaymentMethods;
 using Ewallet.Application.Interfaces;
 using Ewallet.Data;
 using Ewallet.Domain.Entities;
+using Ewallet.Infrastructure.Persistance;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ewallet.Infrastructure.Repositories;

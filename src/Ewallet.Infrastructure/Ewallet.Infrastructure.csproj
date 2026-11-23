@@ -11,6 +11,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0" />
     <ProjectReference Include="..\Ewallet.Domain\Ewallet.Domain.csproj" />
     <ProjectReference Include="..\Ewallet.Application\Ewallet.Application.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
 </Project>

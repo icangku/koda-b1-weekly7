@@ -1,5 +1,5 @@
-using Ewallet.Dtos.AuditLogs;
-using Ewallet.Services;
+using Ewallet.Application.Dtos.AuditLogs;
+using Ewallet.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ewallet.Controllers;
