@@ -19,4 +19,5 @@ public sealed class CurrentUser(IHttpContextAccessor httpContextAccessor) : ICur
   }
 
   public string? CorrelationId => httpContextAccessor.HttpContext?.TraceIdentifier;
+  public bool IsAdmin => httpContextAccessor.HttpContext?.User.IsInRole("ADMIN") ?? false;
 }

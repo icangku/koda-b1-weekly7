@@ -25,6 +25,7 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
 			WalletNotFoundException or UserNotFoundException or PaymentMethodNotFoundException or TopUpNotFoundException
 				=> HttpStatusCode.NotFound,
 			ConflictException or ConcurrencyConflictException => HttpStatusCode.Conflict,
+			UnauthorizedException => HttpStatusCode.Unauthorized,
 			WalletException => HttpStatusCode.BadRequest,
 			DataConstraintException => HttpStatusCode.Conflict,
 			_ => HttpStatusCode.InternalServerError

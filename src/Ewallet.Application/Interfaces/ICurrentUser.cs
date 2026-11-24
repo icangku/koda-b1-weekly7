@@ -6,4 +6,5 @@ public interface ICurrentUser
 {
   long? UserId { get; }
   string? CorrelationId { get; }
+  bool IsAdmin { get; }
 }

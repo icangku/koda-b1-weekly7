@@ -18,6 +18,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<long
   public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
   public DbSet<TopUpRequest> TopUpRequests => Set<TopUpRequest>();
   public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+  public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder) {
     base.OnModelCreating(modelBuilder); 

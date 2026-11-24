@@ -9,11 +9,12 @@ namespace Ewallet.Application.Services;
 public interface IWalletService
 {
     Task<WalletResponse> GetInfoAsync(long walletId, CancellationToken ct = default);
+    Task<WalletResponse> GetMyWalletAsync(CancellationToken ct = default);
     Task<PagedResponse<TransactionResponse>> GetTransactionsAsync(long walletId, HistoryQuery query, CancellationToken ct = default);
     Task<PagedResponse<MutationResponse>> GetMutationsAsync(long walletId, HistoryQuery query, CancellationToken ct = default);
 }
 
-public class WalletService(IWalletRepository wallets, ITransactionRepository transactions, IWalletMutationRepository mutations) : IWalletService
+public class WalletService(IWalletRepository wallets, ITransactionRepository transactions, IWalletMutationRepository mutations, ICurrentUser currentUser) : IWalletService
 {
     private static readonly string[] SortFields = ["createdAt", "amount"];
     private static readonly string[] SortDirs = ["asc", "desc"];
@@ -42,5 +43,21 @@ public class WalletService(IWalletRepository wallets, ITransactionRepository tra
         if (q.From is { } from && q.To is { } to && from > to)
             throw new WalletException("Parameter from tidak boleh lebih besar dari to.");
         if (!await wallets.ExistsAsync(walletId, ct)) throw new WalletNotFoundException();
+    }
+    private async Task EnsureCanAccessWalletAsync(long walletId, CancellationToken ct)
+    {
+        if (currentUser.IsAdmin) return;
+
+        var userId = currentUser.UserId ?? throw new UnauthorizedException();
+        var wallet = await wallets.GetByIdAsync(walletId, ct) ?? throw new WalletNotFoundException();
+
+        if (wallet.UserId != userId)
+            throw new UnauthorizedException("Anda tidak memiliki akses ke wallet ini.");
+    }
+    public async Task<WalletResponse> GetMyWalletAsync(CancellationToken ct = default)
+    {
+        var userId = currentUser.UserId ?? throw new UnauthorizedException();
+        var wallet = await wallets.GetByUserIdAsync(userId, ct) ?? throw new WalletNotFoundException();
+        return await wallets.GetInfoAsync(wallet.Id, ct) ?? throw new WalletNotFoundException();
     }
 }

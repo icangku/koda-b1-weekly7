@@ -1,11 +1,13 @@
 using Ewallet.Application.Dtos.Transfers;
 using Ewallet.Application.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Ewallet.Controllers;
+namespace Ewallet.Api.Controllers;
 
 [ApiController]
 [Route("api/transfers")]
+[Authorize(Policy = "wallet.transact")]
 public class TransfersController(ITransferService service, IWebHostEnvironment env) : ControllerBase
 {
     [HttpPost]

@@ -1,11 +1,13 @@
 using Ewallet.Application.Dtos.TopUps;
 using Ewallet.Application.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Ewallet.Controllers;
+namespace Ewallet.Api.Controllers;
 
 [ApiController]
 [Route("api/topups")]
+[Authorize(Policy = "wallet.transact")]
 public class TopUpsController(ITopUpService service, IWebHostEnvironment env) : ControllerBase
 {
     [HttpPost]

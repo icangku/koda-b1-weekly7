@@ -13,7 +13,8 @@ public record CreateUserRequest(
 public record UpdateUserRequest(
     [Required, StringLength(100)] string FullName,
     [Required, EmailAddress, StringLength(150)] string Email,
-    [Required, Phone, StringLength(20)] string Phone
+    [Required, Phone, StringLength(20)] string Phone,
+    UserStatus? Status = null
 );
 
 public record UserResponse(
@@ -26,3 +27,17 @@ public record UserResponse(
     long? WalletId,
     string? WalletNumber,
     decimal Balance);
+
+public record UserQuery(
+    string? Search = null,
+    UserStatus? Status = null,
+    int Page = 1,
+    int PageSize = 10);
+
+public record PagedUsersResponse(
+    IReadOnlyList<UserResponse> Items,
+    int TotalCount,
+    int ActiveCount,
+    int SuspendedCount,
+    int Page,
+    int PageSize);

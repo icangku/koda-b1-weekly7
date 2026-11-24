@@ -22,6 +22,7 @@ public static class DependencyInjection
     services.AddScoped<ITopUpRequestRepository, TopUpRequestRepository>();
     services.AddScoped<IWalletMutationRepository, WalletMutationRepository>();
     services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+    services.AddScoped<IRefreshTokenService, RefreshTokenService>();
     services.AddDataProtection();
     services.AddIdentityCore<ApplicationUser>(options =>
     {
@@ -39,6 +40,8 @@ public static class DependencyInjection
     .AddEntityFrameworkStores<AppDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
+
+    services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
     
     return services;
   }

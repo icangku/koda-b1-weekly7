@@ -1,47 +1,62 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Ewallet.Infrastructure.Identity;
 
 internal interface IJwtTokenGenerator
 {
-  (string Token, DateTime ExpiresAtUtc) Generate(ApplicationUser user, IEnumerable<string> roles);
+  Task<(string Token, DateTime ExpiresAtUtc)> GenerateAsync(ApplicationUser user);
 }
 
-internal sealed class JwtTokenGenerator(IConfiguration config) : IJwtTokenGenerator
+internal sealed class JwtTokenGenerator(IOptions<JwtOptions> jwtOptions, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole<long>> roleManager) : IJwtTokenGenerator
 {
-  public (string Token, DateTime ExpiresAtUtc) Generate(ApplicationUser user, IEnumerable<string> roles)
+  private readonly JwtOptions _jwt = jwtOptions.Value;
+  public async Task<(string Token, DateTime ExpiresAtUtc)> GenerateAsync(ApplicationUser user)
   {
-    var issuer = config["Jwt:Issuer"] ?? throw new InvalidOperationException("Jwt:Issuer belum dikonfigurasi.");
-    var audience = config["Jwt:Audience"] ?? throw new InvalidOperationException("Jwt:Audience belum dikonfigurasi.");
-    var secretKey = config["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key belum dikonfigurasi.");
-    var expiryMinutes = int.TryParse(config["Jwt:ExpiryMinutes"], out var mins) ? mins : 60;
+    var roles = await userManager.GetRolesAsync(user);
+    var userClaims = await userManager.GetClaimsAsync(user);
 
     var claims = new List<Claim>
     {
-      new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-      new(JwtRegisteredClaimNames.UniqueName, user.UserName ?? string.Empty),
-      new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
-      new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-      new(ClaimTypes.NameIdentifier, user.Id.ToString())
+        new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+        new(JwtRegisteredClaimNames.UniqueName, user.UserName ?? string.Empty),
+        new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
+        new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+        new(ClaimTypes.NameIdentifier, user.Id.ToString())
     };
 
-    foreach (var role in roles)
+    claims.AddRange(userClaims);
+
+    foreach (var roleName in roles)
     {
-        claims.Add(new Claim(ClaimTypes.Role, role));
+        claims.Add(new Claim(ClaimTypes.Role, roleName));
+
+        var role = await roleManager.FindByNameAsync(roleName);
+        if (role is not null)
+        {
+            var roleClaims = await roleManager.GetClaimsAsync(role);
+            claims.AddRange(roleClaims);
+        }
     }
 
-    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+    var distinctClaims = claims
+        .GroupBy(c => new { c.Type, c.Value })
+        .Select(g => g.First())
+        .ToList();
+
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Key));
     var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-    var expiresAtUtc = DateTime.UtcNow.AddMinutes(expiryMinutes);
+    var expiresAtUtc = DateTime.UtcNow.AddMinutes(_jwt.ExpiryMinutes);
 
     var token = new JwtSecurityToken(
-        issuer: issuer,
-        audience: audience,
-        claims: claims,
+        issuer: _jwt.Issuer,
+        audience: _jwt.Audience,
+        claims: distinctClaims,
         expires: expiresAtUtc,
         signingCredentials: credentials);
 

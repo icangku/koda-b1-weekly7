@@ -1,98 +1,71 @@
-// using Ewallet.Application.Dtos.Users;
-// using Ewallet.Application.Exceptions;
-// using Ewallet.Application.Interfaces;
-// using Ewallet.Domain.Entities;
-// using Microsoft.EntityFrameworkCore;
+using Ewallet.Application.Dtos.Users;
+using Ewallet.Application.Exceptions;
+using Ewallet.Application.Interfaces;
+using Ewallet.Domain.Entities;
 
-// namespace Ewallet.Application.Services;
+namespace Ewallet.Application.Services;
 
-// public interface IUserService
-// {
-//     Task<List<UserResponse>> GetAllAsync(CancellationToken ct = default);
-//     Task<UserResponse> GetByIdAsync(long id, CancellationToken ct = default);
-//     Task<UserResponse> CreateAsync(CreateUserRequest request, CancellationToken ct = default);
-//     Task UpdateAsync(long id, UpdateUserRequest request, CancellationToken ct = default);
-// }
+public interface IUserService
+{
+    Task<PagedUsersResponse> GetAllAsync(UserQuery query, CancellationToken ct = default);
+    Task<UserResponse> GetByIdAsync(long id, CancellationToken ct = default);
+    Task UpdateAsync(long id, UpdateUserRequest request, CancellationToken ct = default);
+}
 
-// public class UserService(IUserRepository users, IWalletRepository wallets, IUnitOfWork uow) : IUserService
-// {
-//   public Task<List<UserResponse>> GetAllAsync(CancellationToken ct = default)
-//       => users.GetAllAsync(ct);
+public class UserService(
+    IUserRepository users,
+    IAuditLogService audit,
+    IRefreshTokenService refreshTokens,
+    ICurrentUser currentUser,
+    IUnitOfWork uow) : IUserService
+{
+    public Task<PagedUsersResponse> GetAllAsync(UserQuery query, CancellationToken ct = default)
+        => users.GetAllAsync(query, ct);
 
-//   public async Task<UserResponse> GetByIdAsync(long id, CancellationToken ct = default)
-//       => await users.GetResponseByIdAsync(id, ct) ?? throw new UserNotFoundException();
+    public async Task<UserResponse> GetByIdAsync(long id, CancellationToken ct = default)
+        => await users.GetResponseByIdAsync(id, ct) ?? throw new UserNotFoundException();
 
-//   public async Task<UserResponse> CreateAsync(CreateUserRequest request, CancellationToken ct = default)
-//   {
-//     var username = request.Username.Trim().ToLowerInvariant();
-//     var email = request.Email.Trim().ToLowerInvariant();
-//     var phone = request.Phone.Trim();
+    public async Task UpdateAsync(long id, UpdateUserRequest request, CancellationToken ct = default)
+    {
+        var existing = await users.GetResponseByIdAsync(id, ct) ?? throw new UserNotFoundException();
 
-//     if (await users.UsernameExistsAsync(username, ct)) throw new ConflictException("Username sudah digunakan.");
-//     if (await users.EmailExistsAsync(email, null, ct)) throw new ConflictException("Email sudah digunakan.");
-//     if (await users.PhoneExistsAsync(phone, null, ct)) throw new ConflictException("Nomor telepon sudah digunakan.");
+        var email = request.Email.Trim().ToLowerInvariant();
+        var phone = request.Phone.Trim();
 
-//     var now = DateTime.UtcNow;
-//     var user = new User
-//     {
-//       Username = username,
-//       FullName = request.FullName.Trim(),
-//       Email = email,
-//       Phone = phone,
-//       Status = UserStatus.Active,
-//       CreatedAtUtc = now,
-//       Wallet = new Wallet
-//       {
-//         WalletNumber = await GenerateWalletNumberAsync(ct),
-//         Balance = 0m,
-//         Status = WalletStatus.Active,
-//         CreatedAtUtc = now,
-//       },
-//     };
+        if (await users.EmailExistsAsync(email, id, ct))
+            throw new ConflictException("Email sudah digunakan.");
+        if (await users.PhoneExistsAsync(phone, id, ct))
+            throw new ConflictException("Nomor telepon sudah digunakan.");
 
-//     users.Add(user);
-//     await SaveOrConflictAsync(ct);
+        var updated = await users.UpdateProfileAsync(
+            id,
+            request.FullName.Trim(),
+            email,
+            phone,
+            request.Status,
+            ct);
 
-//     return await users.GetResponseByIdAsync(user.Id, ct) ?? throw new UserNotFoundException();
-//   }
+        if (!updated) throw new UserNotFoundException();
 
-//   public async Task UpdateAsync(long id, UpdateUserRequest request, CancellationToken ct = default)
-//   {
-//     var user = await users.GetByIdAsync(id, ct) ?? throw new UserNotFoundException();
+        // Jika status berubah (mis. ACTIVE -> SUSPENDED), catat audit log & cabut sesi user
+        if (request.Status.HasValue && request.Status.Value != existing.Status)
+        {
+            var newStatus = request.Status.Value;
+            if (newStatus == UserStatus.Suspended)
+            {
+                await refreshTokens.RevokeAllForUserAsync(id, ct);
+            }
 
-//     var email = request.Email.Trim().ToLowerInvariant();
-//     var phone = request.Phone.Trim();
+            audit.Record(new AuditEntry(
+                Action: newStatus == UserStatus.Suspended ? "USER_SUSPENDED" : "USER_ACTIVATED",
+                Outcome: AuditOutcome.Success,
+                EntityType: "ApplicationUser",
+                EntityId: id.ToString(),
+                ActorUserId: currentUser.UserId,
+                TransactionId: null,
+                Description: $"Admin mengubah status akun {existing.Username} menjadi {newStatus.ToString().ToUpperInvariant()}."));
+        }
 
-//     if (await users.EmailExistsAsync(email, id, ct)) throw new ConflictException("Email sudah digunakan.");
-//     if (await users.PhoneExistsAsync(phone, id, ct)) throw new ConflictException("Nomor telepon sudah digunakan.");
-
-//     user.FullName = request.FullName.Trim();
-//     user.Email = email;
-//     user.Phone = phone;
-//     user.UpdatedAtUtc = DateTime.UtcNow;
-
-//     await SaveOrConflictAsync(ct);
-//   }
-
-//   private async Task<string> GenerateWalletNumberAsync(CancellationToken ct)
-//   {
-//     for (var attempt = 0; attempt < 5; attempt++)
-//     {
-//       var number = $"EW{Random.Shared.NextInt64(1_000_000_000L, 10_000_000_000L)}";
-//       if (!await wallets.WalletNumberExistsAsync(number, ct)) return number;
-//     }
-//     throw new InvalidOperationException("Gagal membuat nomor wallet unik.");
-//   }
-
-//   private async Task SaveOrConflictAsync(CancellationToken ct)
-//   {
-//     try
-//     {
-//       await uow.SaveChangesAsync(ct);
-//     }
-//     catch (DbUpdateException ex)
-//     {
-//       throw new ConflictException("Username, email, nomor telepon, atau nomor wallet sudah digunakan.");
-//     }
-//   }
-// }
+        await uow.SaveChangesAsync(ct);
+    }
+}

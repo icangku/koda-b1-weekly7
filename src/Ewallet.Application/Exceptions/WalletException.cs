@@ -49,3 +49,5 @@ public class ConflictException : WalletException
 {
     public ConflictException(string message) : base(message) { }
 }
+
+public class UnauthorizedException(string message = "Kredensial tidak valid.") : WalletException(message);

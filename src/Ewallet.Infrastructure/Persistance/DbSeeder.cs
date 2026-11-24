@@ -59,6 +59,31 @@ public static class DbSeeder
             }
         }
 
+        var rolePermissions = new Dictionary<string, string[]>
+        {
+            ["ADMIN"] = ["users.read", "users.manage", "auditlogs.read"],
+            ["CUSTOMER"] = ["wallet.read", "wallet.transact"]
+        };
+
+        foreach (var (roleName, permissions) in rolePermissions)
+        {
+            var role = await roleManager.FindByNameAsync(roleName);
+            if (role is null)
+            {
+                role = new IdentityRole<long>(roleName);
+                await roleManager.CreateAsync(role);
+            }
+
+            var existingClaims = await roleManager.GetClaimsAsync(role);
+            foreach (var perm in permissions)
+            {
+                if (!existingClaims.Any(c => c.Type == "permission" && c.Value == perm))
+                {
+                    await roleManager.AddClaimAsync(role, new System.Security.Claims.Claim("permission", perm));
+                }
+            }
+        }
+
         // 3. Jika data transaksi/wallet sudah pernah di-seed, hentikan di sini
         if (await db.Wallets.AnyAsync()) return;
 

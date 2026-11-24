@@ -1,10 +1,14 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using Ewallet.Api.Exceptions;
+using Ewallet.Api.Security;
 using Ewallet.Infrastructure;
+using Ewallet.Infrastructure.Identity;
 using Ewallet.Infrastructure.Persistance;
 using Ewallet.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
@@ -21,10 +25,47 @@ builder.Services.AddOpenApi();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("Jwt:Issuer missing");
-var jwtAudience = builder.Configuration["Jwt:Audience"] ?? throw new InvalidOperationException("Jwt:Audience missing");
-var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key missing");
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
+    options.OnRejected = async (context, ct) =>
+    {
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            status = 429,
+            error = "Terlalu banyak permintaan. Silakan coba beberapa saat lagi.",
+            correlationId = context.HttpContext.TraceIdentifier
+        }, ct);
+    };
+
+    options.AddPolicy("auth", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    {
+        var key = httpContext.User.Identity?.Name
+                  ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                  ?? "unknown";
+
+        return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 60,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        });
+    });
+});
+
+var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? throw new InvalidOperationException("Jwt Config missing");
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -38,17 +79,22 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtIssuer,
-        ValidAudience = jwtAudience,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        ValidIssuer = jwt.Issuer,
+        ValidAudience = jwt.Audience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
         ClockSkew = TimeSpan.Zero
     };
 });
-
-builder.Services.AddAuthorization(options =>
+builder.Services.AddCors(options =>
 {
-   options.AddPolicy("CanManageUsers", policy => policy.RequireRole("ADMIN"));
+	options.AddPolicy("Frontend", policy =>
+	policy.WithOrigins("http://localhost:5173")
+				.AllowAnyHeader()
+				.AllowAnyMethod());
 });
+
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, ClaimPolicyProvider>();
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -57,8 +103,14 @@ if (app.Environment.IsDevelopment())
 	await DbSeeder.SeedAsync(app.Services);
 }
 
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
+
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
+app.UseCors("Frontend");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

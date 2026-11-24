@@ -1,10 +1,12 @@
 using Ewallet.Application.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Ewallet.Controllers;
+namespace Ewallet.Api.Controllers;
 
 [ApiController]
 [Route("api/payment-methods")]
+[Authorize]
 public class PaymentMethodsController(IPaymentMethodService service) : ControllerBase
 {
     [HttpGet]

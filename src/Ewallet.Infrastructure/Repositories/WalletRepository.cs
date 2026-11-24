@@ -36,7 +36,8 @@ public class WalletRepository(AppDbContext db) : IWalletRepository
     //   Convert.ToBase64String(w.RowVersion ?? []), w.CreatedAtUtc, w.UpdatedAtUtc);
     return null;
   }
-
+  public Task<Wallet?> GetByUserIdAsync(long userId, CancellationToken ct = default)
+    => db.Wallets.FirstOrDefaultAsync(w => w.UserId == userId, ct);
   public void SetExpectedRowVersion(Wallet wallet, byte[] rowVersion)
     => db.Entry(wallet).Property(w => w.RowVersion).OriginalValue = rowVersion;
 
