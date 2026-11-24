@@ -23,18 +23,36 @@ public class WalletRepository(AppDbContext db) : IWalletRepository
 
   public async Task<WalletResponse?> GetInfoAsync(long id, CancellationToken ct = default)
   {
-    // var w = await db.Wallets.AsNoTracking()
-    //   .Where(w => w.Id == id)
-    //   .Select(w => new
-    //   {
-    //     w.Id, w.WalletNumber, w.UserId, w.User.Username, w.User.FullName,
-    //     w.Balance, w.Status, w.RowVersion, w.CreatedAtUtc, w.UpdatedAtUtc
-    //   })
-    //   .FirstOrDefaultAsync(ct);
-    // return w is null ? null : new WalletResponse(
-    //   w.Id, w.WalletNumber, w.UserId, w.Username, w.FullName, w.Balance, w.Status,
-    //   Convert.ToBase64String(w.RowVersion ?? []), w.CreatedAtUtc, w.UpdatedAtUtc);
-    return null;
+    var w = await (
+        from wallet in db.Wallets.AsNoTracking()
+        join user in db.Users.AsNoTracking() on wallet.UserId equals user.Id
+        where wallet.Id == id
+        select new
+        {
+            wallet.Id,
+            wallet.WalletNumber,
+            wallet.UserId,
+            UserName = user.UserName ?? string.Empty,
+            user.FullName,
+            wallet.Balance,
+            wallet.Status,
+            wallet.RowVersion,
+            wallet.CreatedAtUtc,
+            wallet.UpdatedAtUtc
+        })
+        .FirstOrDefaultAsync(ct);
+
+    return w is null ? null : new WalletResponse(
+        w.Id,
+        w.WalletNumber,
+        w.UserId,
+        w.UserName,
+        w.FullName,
+        w.Balance,
+        w.Status,
+        Convert.ToBase64String(w.RowVersion ?? []),
+        w.CreatedAtUtc,
+        w.UpdatedAtUtc);
   }
   public Task<Wallet?> GetByUserIdAsync(long userId, CancellationToken ct = default)
     => db.Wallets.FirstOrDefaultAsync(w => w.UserId == userId, ct);

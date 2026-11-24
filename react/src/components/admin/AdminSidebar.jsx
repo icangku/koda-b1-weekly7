@@ -1,10 +1,10 @@
-import { LayoutGrid, Users, User, LogOut } from "lucide-react";
+import { LayoutGrid, Users, User, ArrowLeft, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ADMIN_MENU = [
   { id: "ringkasan", label: "Ringkasan", icon: LayoutGrid },
   { id: "pengguna", label: "Pengguna", icon: Users },
-  { id: "profil", label: "Profil", icon: User },
+  { id: "profil", label: "Profil Admin", icon: User },
 ];
 
 export function AdminSidebar({
@@ -12,6 +12,7 @@ export function AdminSidebar({
   onSelectTab,
   onLogout,
   onHelpClick,
+  onBackToWallet,
 }) {
   return (
     <aside className="flex w-60 shrink-0 flex-col justify-between border-r border-slate-200/80 bg-white">

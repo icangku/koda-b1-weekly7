@@ -5,6 +5,7 @@ import {
   Clock,
   Settings,
   LogOut,
+  ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,8 @@ export function Sidebar({
   onSelectTab,
   onLogout,
   onHelpClick,
+  isAdmin = false,
+  onGoToAdmin,
 }) {
   return (
     <aside className="flex w-60 shrink-0 flex-col justify-between border-r border-slate-200/80 bg-white">
@@ -67,6 +70,17 @@ export function Sidebar({
               </button>
             );
           })}
+
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={onGoToAdmin}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-50"
+            >
+              <ShieldAlert className="h-4 w-4 shrink-0 text-amber-600" />
+              <span>Admin Panel</span>
+            </button>
+          )}
 
           <button
             type="button"

@@ -3,6 +3,9 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Ewallet.Api.Exceptions;
 using Ewallet.Api.Security;
+using Ewallet.Api.Services;
+using Ewallet.Application.Interfaces;
+using Ewallet.Application.Services;
 using Ewallet.Infrastructure;
 using Ewallet.Infrastructure.Identity;
 using Ewallet.Infrastructure.Persistance;
@@ -16,14 +19,23 @@ using Scalar.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 if (builder.Environment.IsDevelopment())
 {
-	builder.Configuration.AddUserSecrets<Program>();
+	builder.Configuration.AddUserSecrets<Program>(optional: true);
 }
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(
         new JsonStringEnumConverter(new UpperCaseNamingPolicy())));
 builder.Services.AddOpenApi();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Application Services
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IWalletService, WalletService>();
+builder.Services.AddScoped<IPaymentMethodService, PaymentMethodService>();
+builder.Services.AddScoped<ITopUpService, TopUpService>();
+builder.Services.AddScoped<ITransferService, TransferService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
 builder.Services.AddRateLimiter(options =>
 {

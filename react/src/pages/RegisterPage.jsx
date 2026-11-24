@@ -2,28 +2,53 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/context/AuthContext";
 
 export function RegisterPage({
   onRegisterSuccess,
   onLoginClick,
   defaultValues = {
-    fullName: "Nadia Putri",
-    username: "nadia",
-    email: "nadia@example.com",
-    phone: "0812 3456 7890",
+    fullName: "",
+    userName: "",
+    email: "",
+    phoneNumber: "",
     password: "",
     confirmPassword: "",
   },
 }) {
+  const { register } = useAuth();
   const [form, setForm] = useState(defaultValues);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onRegisterSuccess?.(form);
+    setError("");
+
+    if (form.password !== form.confirmPassword) {
+      setError("Konfirmasi password tidak cocok.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const user = await register({
+        fullName: form.fullName,
+        userName: form.userName || form.username,
+        email: form.email,
+        phoneNumber: form.phoneNumber || form.phone,
+        password: form.password,
+      });
+      onRegisterSuccess?.(user);
+    } catch (err) {
+      setError(err.message || "Pendaftaran gagal.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,7 +76,7 @@ export function RegisterPage({
 
       {/* Panel Kanan: Form Buat Akun */}
       <section className="flex flex-1 items-center justify-center bg-white px-6 py-12 sm:px-12 lg:min-h-screen">
-        <Card className="w-full max-w-xl border-0 bg-transparent py-0 shadow-none">
+        <Card className="w-full max-w-xl border-0 bg-transparent py-0 shadow-none ring-0">
           <CardContent className="px-0">
             <div className="mb-8">
               <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-[28px]">
@@ -61,6 +86,12 @@ export function RegisterPage({
                 Isi data pribadi untuk mulai menggunakan dompet.
               </p>
             </div>
+
+            {error && (
+              <div className="mb-5 rounded-lg bg-rose-50 p-3 text-xs font-medium text-rose-600">
+                {error}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Baris 1: Nama lengkap & Username */}
@@ -75,6 +106,7 @@ export function RegisterPage({
                   <Input
                     id="fullName"
                     type="text"
+                    required
                     value={form.fullName}
                     onChange={handleChange("fullName")}
                     placeholder="Nama lengkap"
@@ -84,16 +116,17 @@ export function RegisterPage({
 
                 <div className="space-y-2">
                   <label
-                    htmlFor="username"
+                    htmlFor="userName"
                     className="block text-xs font-medium text-slate-500"
                   >
                     Username
                   </label>
                   <Input
-                    id="username"
+                    id="userName"
                     type="text"
-                    value={form.username}
-                    onChange={handleChange("username")}
+                    required
+                    value={form.userName ?? form.username ?? ""}
+                    onChange={handleChange("userName")}
                     placeholder="username"
                     className="h-12 rounded-lg border-slate-200 bg-white px-4 text-sm text-slate-800 shadow-none focus-visible:border-[#0d5c52] focus-visible:ring-[#0d5c52]/20"
                   />
@@ -112,6 +145,7 @@ export function RegisterPage({
                   <Input
                     id="email"
                     type="email"
+                    required
                     value={form.email}
                     onChange={handleChange("email")}
                     placeholder="nama@email.com"
@@ -121,17 +155,18 @@ export function RegisterPage({
 
                 <div className="space-y-2">
                   <label
-                    htmlFor="phone"
+                    htmlFor="phoneNumber"
                     className="block text-xs font-medium text-slate-500"
                   >
                     Nomor telepon
                   </label>
                   <Input
-                    id="phone"
+                    id="phoneNumber"
                     type="tel"
-                    value={form.phone}
-                    onChange={handleChange("phone")}
-                    placeholder="0812 3456 7890"
+                    required
+                    value={form.phoneNumber ?? form.phone ?? ""}
+                    onChange={handleChange("phoneNumber")}
+                    placeholder="081234567890"
                     className="h-12 rounded-lg border-slate-200 bg-white px-4 text-sm text-slate-800 shadow-none focus-visible:border-[#0d5c52] focus-visible:ring-[#0d5c52]/20"
                   />
                 </div>
@@ -149,6 +184,7 @@ export function RegisterPage({
                   <Input
                     id="password"
                     type="password"
+                    required
                     value={form.password}
                     onChange={handleChange("password")}
                     placeholder="Minimal 8 karakter"
@@ -166,6 +202,7 @@ export function RegisterPage({
                   <Input
                     id="confirmPassword"
                     type="password"
+                    required
                     value={form.confirmPassword}
                     onChange={handleChange("confirmPassword")}
                     placeholder="Ulangi password"
@@ -182,9 +219,10 @@ export function RegisterPage({
               {/* Tombol Submit */}
               <Button
                 type="submit"
-                className="h-12 w-full rounded-lg bg-[#0d5c52] text-sm font-semibold text-white hover:bg-[#09473f]"
+                disabled={loading}
+                className="h-12 w-full rounded-lg bg-[#0d5c52] text-sm font-semibold text-white hover:bg-[#09473f] disabled:opacity-50"
               >
-                Buat akun
+                {loading ? "Membuat akun..." : "Buat akun"}
               </Button>
             </form>
 

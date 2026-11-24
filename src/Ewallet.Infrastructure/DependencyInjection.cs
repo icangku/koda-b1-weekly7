@@ -1,4 +1,4 @@
-﻿using Ewallet.Application.Interfaces;
+using Ewallet.Application.Interfaces;
 using Ewallet.Infrastructure.Identity;
 using Ewallet.Infrastructure.Persistance;
 using Ewallet.Infrastructure.Repositories;
@@ -22,7 +22,10 @@ public static class DependencyInjection
     services.AddScoped<ITopUpRequestRepository, TopUpRequestRepository>();
     services.AddScoped<IWalletMutationRepository, WalletMutationRepository>();
     services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+    services.AddScoped<IUserRepository, UserRepository>();
     services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+    services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+    services.AddScoped<IAuthService, AuthService>();
     services.AddDataProtection();
     services.AddIdentityCore<ApplicationUser>(options =>
     {

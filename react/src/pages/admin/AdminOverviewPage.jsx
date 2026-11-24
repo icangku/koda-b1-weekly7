@@ -1,63 +1,72 @@
+import { useState, useEffect } from "react";
 import { AdminTopHeader } from "@/components/admin/AdminTopHeader";
 import { PlatformSummaryCards } from "@/components/admin/PlatformSummaryCards";
 import { RecentUsersCard } from "@/components/admin/RecentUsersCard";
+import { apiFetch } from "@/lib/api";
 
-const DEFAULT_STATS = [
-  {
-    id: "total",
-    label: "Total pengguna",
-    value: "1.248",
-    helper: "+ 28 bulan ini",
-    accentType: "success",
-  },
-  {
-    id: "active",
-    label: "Akun aktif",
-    value: "1.190",
-    helper: "95,4% dari seluruh akun",
-    accentType: "success",
-  },
-  {
-    id: "suspended",
-    label: "Akun ditangguhkan",
-    value: "58",
-    helper: "Perlu pemantauan",
-    accentType: "warning",
-  },
-];
+export function AdminOverviewPage({ onViewAllUsers }) {
+  const [stats, setStats] = useState([]);
+  const [recentUsers, setRecentUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-const DEFAULT_RECENT_USERS = [
-  {
-    id: "1",
-    name: "Nadia Putri",
-    email: "nadia@example.com",
-    status: "Aktif",
-  },
-  {
-    id: "2",
-    name: "Bima Pratama",
-    email: "bima@example.com",
-    status: "Aktif",
-  },
-  {
-    id: "3",
-    name: "Rina Maharani",
-    email: "rina@example.com",
-    status: "Aktif",
-  },
-  {
-    id: "4",
-    name: "Hendra Wijaya",
-    email: "hendra@example.com",
-    status: "Ditangguhkan",
-  },
-];
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await apiFetch("/api/users?page=1&pageSize=5");
+        const total = res.totalCount ?? 0;
+        const active = res.activeCount ?? 0;
+        const suspended = res.suspendedCount ?? 0;
 
-export function AdminOverviewPage({
-  stats = DEFAULT_STATS,
-  recentUsers = DEFAULT_RECENT_USERS,
-  onViewAllUsers,
-}) {
+        const activePercentage = total > 0 ? ((active / total) * 100).toFixed(1) : "0";
+
+        setStats([
+          {
+            id: "total",
+            label: "Total pengguna",
+            value: total.toLocaleString("id-ID"),
+            helper: "Terdaftar dalam sistem",
+            accentType: "success",
+          },
+          {
+            id: "active",
+            label: "Akun aktif",
+            value: active.toLocaleString("id-ID"),
+            helper: `${activePercentage}% dari seluruh akun`,
+            accentType: "success",
+          },
+          {
+            id: "suspended",
+            label: "Akun ditangguhkan",
+            value: suspended.toLocaleString("id-ID"),
+            helper: suspended > 0 ? "Perlu pemantauan" : "Tidak ada akun bermasalah",
+            accentType: suspended > 0 ? "warning" : "success",
+          },
+        ]);
+
+        const items = res.items || [];
+        setRecentUsers(
+          items.map((u) => ({
+            id: String(u.id),
+            name: u.fullName || u.username,
+            email: u.email,
+            status:
+              String(u.status).toUpperCase() === "ACTIVE" || u.status === 0
+                ? "Aktif"
+                : "Ditangguhkan",
+          }))
+        );
+      } catch (err) {
+        setError(err.message || "Gagal memuat ringkasan admin.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <AdminTopHeader
@@ -68,9 +77,22 @@ export function AdminOverviewPage({
         initials="AD"
       />
 
-      <PlatformSummaryCards stats={stats} />
+      {error && (
+        <div className="rounded-xl bg-rose-50 p-4 text-xs font-medium text-rose-600">
+          {error}
+        </div>
+      )}
 
-      <RecentUsersCard users={recentUsers} onViewAll={onViewAllUsers} />
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#0d5c52] border-t-transparent" />
+        </div>
+      ) : (
+        <>
+          <PlatformSummaryCards stats={stats} />
+          <RecentUsersCard users={recentUsers} onViewAll={onViewAllUsers} />
+        </>
+      )}
     </div>
   );
 }

@@ -1,42 +1,111 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AdminTopHeader } from "@/components/admin/AdminTopHeader";
+import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-const DEFAULT_USER = {
-  id: "1",
-  name: "Nadia Putri",
-  handle: "@nadia",
-  email: "nadia@example.com",
-  phone: "0812 3456 7890",
-  walletNumber: "KW •••• 1842",
-  joinedAt: "10 November 2026",
-  status: "Aktif",
-};
+export function AdminUserDetailPage({ userId, onBackToList }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-export function AdminUserDetailPage({
-  user = DEFAULT_USER,
-  onBackToList,
-  onToggleSuspend,
-}) {
-  const [status, setStatus] = useState(user.status || "Aktif");
+  const loadUser = async () => {
+    if (!userId) return;
+    setLoading(true);
+    setError("");
+    try {
+      const data = await apiFetch(`/api/users/${userId}`);
+      setUser({
+        id: String(data.id),
+        name: data.fullName || data.username,
+        handle: `@${data.username}`,
+        email: data.email,
+        phone: data.phone,
+        walletNumber: data.walletNumber || "-",
+        balance: data.balance,
+        status:
+          String(data.status).toUpperCase() === "ACTIVE" || data.status === 0
+            ? "Aktif"
+            : "Ditangguhkan",
+        raw: data,
+      });
+    } catch (err) {
+      setError(err.message || "Gagal memuat detail user.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const initials = (user.name || "NP")
+  useEffect(() => {
+    loadUser();
+  }, [userId]);
+
+  const handleToggleSuspend = async () => {
+    if (!user) return;
+    const isSuspended = user.status === "Ditangguhkan";
+    const nextBackendStatus = isSuspended ? "Active" : "Suspended";
+
+    setActionLoading(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      await apiFetch(`/api/users/${userId}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          fullName: user.raw?.fullName || user.name,
+          email: user.raw?.email || user.email,
+          phone: user.raw?.phone || user.phone,
+          status: nextBackendStatus,
+        }),
+      });
+
+      setSuccess(`Status user berhasil diubah menjadi ${isSuspended ? "Aktif" : "Ditangguhkan"}.`);
+      await loadUser();
+    } catch (err) {
+      setError(err.message || "Gagal memperbarui status user.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#0d5c52] border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!user && !loading) {
+    return (
+      <div className="mx-auto max-w-6xl space-y-5">
+        <button
+          type="button"
+          onClick={onBackToList}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0d5c52] hover:underline"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span>Kembali ke daftar</span>
+        </button>
+        <div className="rounded-xl bg-rose-50 p-4 text-xs font-medium text-rose-600">
+          {error || "Pengguna tidak ditemukan."}
+        </div>
+      </div>
+    );
+  }
+
+  const isSuspended = user.status === "Ditangguhkan";
+  const initials = (user.name || "U")
     .split(" ")
     .slice(0, 2)
-    .map((part) => part[0])
+    .map((p) => p[0])
     .join("")
     .toUpperCase();
-
-  const isSuspended = status === "Ditangguhkan";
-
-  const handleToggle = () => {
-    const nextStatus = isSuspended ? "Aktif" : "Ditangguhkan";
-    setStatus(nextStatus);
-    onToggleSuspend?.(user, nextStatus);
-  };
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -47,6 +116,17 @@ export function AdminUserDetailPage({
         adminLabel="Admin"
         initials="AD"
       />
+
+      {success && (
+        <div className="rounded-xl bg-emerald-50 p-3 text-xs font-medium text-[#0d5c52]">
+          {success}
+        </div>
+      )}
+      {error && (
+        <div className="rounded-xl bg-rose-50 p-3 text-xs font-medium text-rose-600">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
         <Card className="rounded-2xl border-slate-200/70 bg-white py-7 shadow-2xs lg:col-span-8">
@@ -81,7 +161,7 @@ export function AdminUserDetailPage({
                     : "bg-[#edf6f4] text-[#0d5c52]",
                 )}
               >
-                {status}
+                {user.status}
               </span>
             </div>
 
@@ -100,56 +180,49 @@ export function AdminUserDetailPage({
               </div>
               <div className="flex items-center justify-between gap-4 text-xs">
                 <dt className="text-slate-400">Nomor dompet</dt>
-                <dd className="font-semibold text-slate-800">
+                <dd className="font-mono font-semibold text-slate-800">
                   {user.walletNumber}
                 </dd>
               </div>
               <div className="flex items-center justify-between gap-4 text-xs">
-                <dt className="text-slate-400">Terdaftar sejak</dt>
+                <dt className="text-slate-400">Saldo dompet</dt>
                 <dd className="font-semibold text-slate-800">
-                  {user.joinedAt}
+                  Rp {Number(user.balance || 0).toLocaleString("id-ID")}
                 </dd>
               </div>
             </dl>
           </CardContent>
         </Card>
 
-        <div className="lg:col-span-4">
+        <div className="space-y-5 lg:col-span-4">
           <Card className="rounded-2xl border-slate-200/70 bg-white py-6 shadow-2xs">
             <CardContent className="px-6">
               <h2 className="text-base font-bold text-slate-900">
-                Status akun
+                Aksi Pengelolaan
               </h2>
-
-              <div className="mt-4">
-                <span
-                  className={cn(
-                    "inline-flex rounded-md px-3 py-1 text-[11px] font-semibold",
-                    isSuspended
-                      ? "bg-rose-50 text-rose-500"
-                      : "bg-[#edf6f4] text-[#0d5c52]",
-                  )}
-                >
-                  {status}
-                </span>
-              </div>
-
-              <p className="mt-4 text-xs leading-relaxed text-slate-400">
-                Menangguhkan akun akan membatasi akses dan transaksi.
+              <p className="mt-1 text-xs text-slate-400">
+                Ubah status akun customer sewaktu-waktu jika diperlukan.
               </p>
 
-              <Button
-                type="button"
-                onClick={handleToggle}
-                className={cn(
-                  "mt-6 h-11 w-full rounded-lg text-xs font-semibold text-white",
-                  isSuspended
-                    ? "bg-[#0d5c52] hover:bg-[#09473f]"
-                    : "bg-[#b44339] hover:bg-[#99362e]",
-                )}
-              >
-                {isSuspended ? "Aktifkan akun" : "Tangguhkan akun"}
-              </Button>
+              <div className="mt-5">
+                <Button
+                  type="button"
+                  disabled={actionLoading}
+                  onClick={handleToggleSuspend}
+                  className={cn(
+                    "w-full text-xs font-semibold text-white",
+                    isSuspended
+                      ? "bg-[#0d5c52] hover:bg-[#09473f]"
+                      : "bg-rose-600 hover:bg-rose-700",
+                  )}
+                >
+                  {actionLoading
+                    ? "Memproses..."
+                    : isSuspended
+                    ? "Aktifkan Akun"
+                    : "Tangguhkan Akun"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
