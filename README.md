@@ -1,131 +1,163 @@
-# E-Wallet API (Weekly 6)
+# KodaWallet - E-Wallet Platform (Fullstack)
 
-Lanjutan project e-wallet dari weekly 5. Minggu ini data access-nya saya pindah dari ADO.NET ke EF Core, strukturnya masih sama (Controller, Service, Repository, DTO). Ditambah top up, payment method, mutasi wallet, sama audit log.
+Proyek ini adalah kelanjutan dari e-wallet sebelumnya, yang sekarang sudah berkembang jadi aplikasi fullstack: backend REST API berbasis **ASP.NET Core (.NET 10)** dengan **Clean Architecture**, dan frontend web SPA berbasis **React (Vite + Tailwind CSS)**.
 
-Pakai .NET 10, EF Core, SQL Server.
+Tujuan utama di weekly ini adalah memisahkan tanggung jawab kode secara modular (Domain, Application, Infrastructure, API), mengimplementasikan sistem autentikasi & autorisasi berbasis Identity dan JWT (dengan refresh token rotation & rate limiting), serta menyambungkan antarmuka React secara langsung ke API nyata tanpa dummy data lagi.
 
-## Cara jalanin
+---
 
-1. Ubah connection string di `src/Ewallet/appsettings.json` sesuai SQL Server masing-masing.
+## Arsitektur & Struktur Proyek
 
-2. Jalankan migration:
-
-   ```bash
-   cd src/Ewallet
-   dotnet ef database update
-   ```
-
-3. Run:
-
-   ```bash
-   dotnet run
-   ```
-
-   Buka `http://localhost:5000/scalar` buat coba endpoint-nya. Contoh request juga ada di `src/Ewallet/Ewallet.http`.
-
-### Seeding
-
-Seeder jalan otomatis waktu app di-run di mode Development (sekalian migrate), tapi cuma kalau tabel Users masih kosong. Isinya:
-
-- 10 user, masing-masing punya wallet (saldo awal 0)
-- 3 payment method: Bank Transfer, QRIS, Credit Card
-- beberapa top up dan transfer, saldo akhirnya dihitung dari transaksi yang sukses aja (1 top up sengaja dibiarkan PENDING)
-
-Kalau mau seed ulang dari awal: `dotnet ef database drop -f` terus run lagi.
-
-## Endpoint
+Project backend dibagi ke dalam layer Clean Architecture agar domain logic tidak terikat langsung ke database framework maupun Web API framework.
 
 ```
-GET    /api/users
-GET    /api/users/{id}
-POST   /api/users                    -> otomatis bikin wallet ACTIVE saldo 0
-PUT    /api/users/{id}
-
-GET    /api/wallets/{id}
-GET    /api/wallets/{id}/transactions
-GET    /api/wallets/{id}/mutations
-
-GET    /api/payment-methods
-
-POST   /api/topups                   -> status PENDING, saldo belum nambah
-GET    /api/topups/{id}
-POST   /api/topups/{id}/confirm      -> cuma bisa di Development
-
-POST   /api/transfers
-
-GET    /api/audit-logs
+├── src/
+│   ├── Ewallet.Domain/           # Entities inti, value objects, enum
+│   ├── Ewallet.Application/      # DTOs, interface repository/service, core use cases
+│   ├── Ewallet.Infrastructure/   # Implementasi EF Core, Identity, JWT, Repositories
+│   └── Ewallet.Api/              # Controllers, middlewares, program setup, rate limiting
+│
+├── react/                        # Frontend React + Vite
+│   ├── src/
+│   │   ├── context/              # AuthContext (state user, session, permissions)
+│   │   ├── lib/                  # api.js (fetch client wrapper + auto refresh token)
+│   │   ├── components/           # UI components, layout items, ProtectedRoute
+│   │   ├── layouts/              # WalletLayout (customer) & AdminLayout (admin)
+│   │   └── pages/                # Customer pages & Admin pages
+│
+└── tests/
+    └── Ewallet.Tests/            # Unit / integration tests
 ```
 
-Histori transaksi & mutasi bisa pakai query: `search` (ReferenceNo), `type`, `status`, `direction`, `from`, `to`, `sortBy` (createdAt/amount), `sortDir`, `page`, `pageSize`.
+### Kenapa dibagi seperti ini?
 
-Contoh: `/api/wallets/1/transactions?type=TRANSFER&direction=OUT&page=1&pageSize=5`
+1. **Ewallet.Domain**: 
+   - Berisi entity inti (`Wallet`, `Transaction`, `WalletMutation`, `TopUpRequest`, `AuditLog`) dan enum.
+   - Tidak punya dependency ke project mana pun. Menjamin aturan bisnis dasar tidak mudah terkontaminasi urusan HTTP atau ORM.
+2. **Ewallet.Application**:
+   - Berisi DTO, kontrak repository (`IWalletRepository`, `IUserRepository`, dll.), dan logika transaksi bisnis (`WalletService`, `TransferService`, `TopUpService`).
+   - Hanya bergantung ke `Domain`. Jika suatu hari data source diganti dari EF Core ke mekanisme lain, use case bisnis tidak perlu ditulis ulang.
+3. **Ewallet.Infrastructure**:
+   - Tempat semua detail teknis: konfigurasi Entity Framework Core (`AppDbContext`), ASP.NET Core Identity (`ApplicationUser`), implementasi JWT generator, refresh token family rotation, dan repositori konkrit.
+   - Menghubungkan interface `Application` dengan database SQL Server.
+4. **Ewallet.Api**:
+   - Menangani layer HTTP: routing controller, request validation, global exception middleware, CORS, dan rate limiter.
+5. **React Frontend**:
+   - Menggunakan model single-page application (SPA) yang bersih dengan React Router. State auth dan izin hak akses diletakkan terpusat di `AuthContext`, sementara `api.js` mengisolasi semua urusan headers, token JWT, dan auto-refresh.
 
-Buat ngetes rollback ada `POST /api/transfers?simulateFailure=true` (Development aja), dia sengaja error sebelum commit jadi saldonya harusnya ga berubah.
+---
 
-## ERD
+## Keputusan Desain & Alasan Teknis
 
-ERD dari sini: https://github.com/AnggiJuhniawan/ERD-weekly-6
+### 1. Model Transaksi: `Transactions` vs `WalletMutations` vs `AuditLogs`
+- **Transactions**: Menyimpan data transaksi di level bisnis (apakah Top Up atau Transfer, dari wallet mana ke wallet mana, nominal, dan statusnya).
+- **WalletMutations**: Mencatat buku besar (ledger) saldo per wallet secara historis. Untuk transfer antar wallet, dibuat 2 mutasi (`OUT` pada pengirim dan `IN` pada penerima) lengkap dengan saldo sebelum dan sesudahnya. Ini memudahkan audit keuangan jika suatu saat saldo tidak balance.
+- **AuditLogs**: Mencatat rekam jejak aksi pengguna dan sistem (termasuk aksi yang ditolak/gagal). Audit log dibuat terpisah agar kegagalan operasi tetap bisa terdokumentasi tanpa membatalkan transaksi log audit itu sendiri (`RecordIndependentAsync`).
+
+### 2. Concurrency Control dengan `RowVersion`
+Operasi dompet digital rentan terhadap *race condition* (misalnya pengguna mengklik transfer 2 kali dalam milidetik yang sama). 
+- Di entity `Wallet`, kami memasang token concurrency berbasis `byte[]` (`RowVersion` di SQL Server).
+- Saat ada update bersamaan yang konflik, EF Core akan mendeteksi `DbUpdateConcurrencyException`, yang kemudian diterjemahkan oleh middleware menjadi status `409 Conflict`. Saldo tidak akan pernah bertambah/berkurang dua kali tanpa sinkronisasi yang valid.
+
+### 3. Database Transaction & Atomic Operations
+- Di method kritis seperti konfirmasi top up dan transfer dana, kami menggunakan `IDbTransaction` / EF Core execution strategy.
+- Seluruh mutasi saldo, insert histori transaksi, pembuatan mutasi saldo, dan pencatatan audit log harus berhasil bersama-sama. Jika terjadi error di tengah jalan, seluruh perubahan di-rollback secara otomatis.
+
+### 4. Autentikasi: JWT Access Token + Refresh Token Family
+- **Access Token (JWT)** dibuat berumur pendek untuk keamanan.
+- **Refresh Token** disimpan di database dengan pengelompokan `FamilyId`. Kami menerapkan **Refresh Token Rotation**: setiap kali token di-refresh, token lama di-revoke dan token baru diterbitkan. Jika ada indikasi penggunaan token yang sudah di-revoke (potensi token theft), seluruh keluarga token terkait otomatis dicabut.
+- **Auto-Refresh di Frontend (`src/lib/api.js`)**: Saat request biasa menerima HTTP `401 Unauthorized`, interceptor frontend otomatis memanggil `POST /api/auth/refresh` di belakang layar, memperbarui token di storage, lalu mengulang kembali request asli tanpa memaksa user logout.
+
+### 5. Role & Permission-based Authorization
+- Pengguna dibedakan lewat peran Identity (`CUSTOMER` dan `ADMIN`).
+- Backend memvalidasi hak akses menggunakan custom claim policy (`ClaimPolicyProvider`), misalnya policy `users.manage`, `wallet.transact`, atau `auditlogs.read`.
+- Di frontend, komponen `ProtectedRoute` menjaga agar halaman pengguna biasa terlindungi dari tamu yang belum login, dan rute `/admin/*` hanya bisa dimasuki user yang memiliki role `ADMIN`. Bila user tanpa role admin memaksa masuk, mereka diarahkan ke halaman `/forbidden` (403).
+
+### 6. Rate Limiting & Naming Policy
+- Rate Limiter bawaan .NET dipasang untuk mencegah serangan brute-force pada endpoint auth (`/api/auth/*` dibatasi 10 request/menit per IP) dan batas global untuk penggunaan API reguler.
+- Menggunakan `UpperCaseNamingPolicy` pada enum JSON (`ACTIVE`, `SUSPENDED`, `SUCCESS`, dll.) untuk standardisasi format status di database dan REST API.
+
+---
+
+## Alur & Fitur Frontend yang Terhubung
+
+Semua komponen dummy di frontend sudah terhubung penuh ke backend:
+- **Autentikasi**:
+  - Login & Register langsung membuat akun dan dompet baru dengan saldo awal Rp0.
+  - Alur lupa password: `POST /api/auth/forgot-password` untuk meminta token reset, dan `POST /api/auth/reset-password` untuk mereset kata sandi.
+  - Auto-redirect: Pengguna admin otomatis diarahkan ke `/admin` setelah login, sedangkan customer diarahkan ke `/dashboard`.
+- **Dashboard & Transaksi**:
+  - Tampilan saldo real-time dan nomor wallet dari `GET /api/wallets/me`.
+  - Riwayat aktivitas transaksi terkini dengan penandaan arah dana yang akurat (Pemasukan vs Pengeluaran).
+  - Formulir Isi Saldo (Top Up): Pemilihan metode pembayaran aktif dari backend (QRIS / Bank Transfer) dan simulasi konfirmasi pembayaran.
+  - Formulir Transfer: Validasi saldo cukup, input nomor dompet tujuan, catatan opsional, dan pengiriman dengan `RowVersion`.
+- **Riwayat & Pengaturan Akun**:
+  - Halaman Aktivitas: Pencarian berdasarkan referensi, filter tipe (`TOPUP` / `TRANSFER`), filter status (`SUCCESS`, `PENDING`, `FAILED`), dan pagination.
+  - Halaman Pengaturan (Customer) & Profil Admin: Menampilkan info akun, form pembaruan nama & telepon via `PUT /api/auth/me`, serta form ubah kata sandi via `POST /api/auth/change-password`.
+- **Panel Admin**:
+  - Ringkasan platform: Total pengguna, akun aktif, akun ditangguhkan, dan rasio status pengguna secara dinamis.
+  - Kelola Pengguna: Pencarian, filter status, tabel pengguna, pagination.
+  - Detail Pengguna: Membuka data akun customer dan tombol aksi cepat untuk Mengaktifkan / Menangguhkan akun (`PUT /api/users/{id}`).
+
+---
+
+## Cara Menjalankan
+
+### 1. Menjalankan Backend (ASP.NET Core)
+
+1. Pastikan connection string di [appsettings.json](file:///home/alvin/Desktop/koda/net/ewallet-w7/src/Ewallet.Api/appsettings.json) sudah sesuai dengan instans SQL Server lokal Anda:
+   ```json
+   "ConnectionStrings": {
+     "Default": "Server=localhost;Database=EwalletDb;Trusted_Connection=True;TrustServerCertificate=True"
+   }
+   ```
+2. Jalankan migrasi database:
+   ```bash
+   dotnet ef database update --project src/Ewallet.Infrastructure --startup-project src/Ewallet.Api
+   ```
+3. Jalankan API:
+   ```bash
+   dotnet run --project src/Ewallet.Api
+   ```
+   API akan berjalan di `http://localhost:5000`. Dokumentasi Scalar API dapat diakses di `http://localhost:5000/scalar`.
+
+> **Catatan Seeding**: Pada mode Development, aplikasi otomatis melakukan database seed jika data pengguna masih kosong (membuat akun admin, akun customer contoh, metode pembayaran, serta beberapa histori transaksi).
+
+### 2. Menjalankan Frontend (React)
+
+1. Masuk ke direktori `react`:
+   ```bash
+   cd react
+   ```
+2. Pasang dependensi jika belum:
+   ```bash
+   pnpm install
+   ```
+3. Buat file `.env` (opsional jika menggunakan default `http://localhost:5000`):
+   ```env
+   VITE_API_URL=http://localhost:5000
+   ```
+4. Jalankan dev server Vite:
+   ```bash
+   pnpm dev
+   ```
+   Aplikasi React akan berjalan di `http://localhost:5173`.
+
+---
+
+## ERD Database
 
 ```mermaid
 erDiagram
     Users ||--|| Wallets : punya
     Users ||--o{ AuditLogs : aktor
+    Users ||--o{ RefreshTokens : session
     Wallets ||--o{ Transactions : sender
     Wallets ||--o{ Transactions : receiver
-    Wallets ||--o{ WalletMutations : ""
-    Wallets ||--o{ TopUpRequests : ""
-    Transactions ||--o{ WalletMutations : ""
-    Transactions ||--o| TopUpRequests : ""
-    Transactions ||--o{ AuditLogs : ""
-    PaymentMethods ||--o{ TopUpRequests : ""
+    Wallets ||--o{ WalletMutations : mencatat
+    Wallets ||--o{ TopUpRequests : memiliki
+    Transactions ||--o{ WalletMutations : menghasilkan
+    Transactions ||--o| TopUpRequests : referensi
+    Transactions ||--o{ AuditLogs : audit
+    PaymentMethods ||--o{ TopUpRequests : metode
 ```
-
-Constraint (unique, check, index) semuanya di-setting pakai Fluent API di folder `Data/Configurations`.
-
-## Penjelasan singkat
-
-**Transactions vs WalletMutations vs AuditLogs**
-
-- Transactions: catatan transaksinya (top up / transfer), nominal, dari siapa ke siapa, statusnya.
-- WalletMutations: perubahan saldo per wallet, ada saldo sebelum & sesudah. Jadi 1 transfer = 2 mutasi (OUT di pengirim, IN di penerima), top up = 1 mutasi.
-- AuditLogs: log aktivitas, termasuk yang gagal/ditolak (misal transfer saldo kurang). Isinya cuma pesan umum, ga nyimpen data sensitif.
-
-**AsNoTracking** dipakai di query yang cuma baca data (histori, list, dll) biar EF ga perlu tracking entity, jadi lebih ringan.
-
-**Database transaction** dipakai waktu top up confirm dan transfer, karena yang diubah banyak tabel sekaligus (saldo, transaksi, mutasi, audit). Kalau ada yang gagal di tengah, semuanya di-rollback, jadi ga ada saldo yang berubah setengah-setengah.
-
-**RowVersion** di tabel Wallets buat ngecek kalau ada 2 request yang ngubah saldo wallet yang sama barengan. Yang kalah bakal kena `DbUpdateConcurrencyException`, terus saya balikin 409 Conflict.
-
-## Screenshot
-
-List user
-
-![List user](images/users/list-user.jpg)
-
-Saldo wallet budi sebelum top up (600.000)
-
-![Wallet sebelum top up](images/ewallet-before.jpg)
-
-Request top up 150.000, status masih PENDING dan saldo belum berubah
-
-![Top up pending](images/ewallet-topup-not-confirm.jpg)
-
-Setelah di-confirm, status jadi PAID / SUCCESS
-
-![Top up confirmed](images/topup-confirmed.jpg)
-
-Saldo sesudah top up jadi 750.000 (rowVersion juga berubah)
-
-![Wallet sesudah top up](images/ewallet-after-topup-confirmed.jpg)
-
-Confirm top up yang udah PAID -> 409
-
-![Top up 409 conflict](images/topup-409-conflict.jpg)
-
-Histori transaksi wallet
-
-![Histori transaksi](images/ewallet-transactions.jpg)
-
-Audit log
-
-![Audit logs](images/audit.jpg)
