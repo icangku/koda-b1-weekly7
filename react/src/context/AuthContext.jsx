@@ -1,32 +1,25 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, setAccessToken, clearAccessToken, refreshSession } from "@/lib/api";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem("user");
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
 
-    apiFetch("/api/auth/me")
+    refreshSession()
       .then((data) => {
-        setUser(data);
-        localStorage.setItem("user", JSON.stringify(data));
+        setAccessToken(data.accessToken);
+        setUser(data.user);
       })
       .catch(() => {
+        clearAccessToken();
         setUser(null);
-        localStorage.removeItem("user");
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
       })
       .finally(() => {
         setLoading(false);
@@ -38,9 +31,7 @@ export function AuthProvider({ children }) {
       method: "POST",
       body: JSON.stringify({ identifier, password }),
     });
-    localStorage.setItem("accessToken", res.accessToken);
-    localStorage.setItem("refreshToken", res.refreshToken);
-    localStorage.setItem("user", JSON.stringify(res.user));
+    setAccessToken(res.accessToken);
     setUser(res.user);
     return res.user;
   };
@@ -50,25 +41,19 @@ export function AuthProvider({ children }) {
       method: "POST",
       body: JSON.stringify(payload),
     });
-    localStorage.setItem("accessToken", res.accessToken);
-    localStorage.setItem("refreshToken", res.refreshToken);
-    localStorage.setItem("user", JSON.stringify(res.user));
+    setAccessToken(res.accessToken);
     setUser(res.user);
     return res.user;
   };
 
   const logout = async () => {
-    const refreshToken = localStorage.getItem("refreshToken");
     try {
-      if (refreshToken) {
-        await apiFetch("/api/auth/logout", {
-          method: "POST",
-          body: JSON.stringify({ refreshToken }),
-        });
-      }
+      await apiFetch("/api/auth/logout", {
+        method: "POST",
+      });
     } catch {
-      // Abaikan error saat revoke
     } finally {
+      clearAccessToken();
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
@@ -79,7 +64,6 @@ export function AuthProvider({ children }) {
   const refreshProfile = async () => {
     const data = await apiFetch("/api/auth/me");
     setUser(data);
-    localStorage.setItem("user", JSON.stringify(data));
     return data;
   };
 

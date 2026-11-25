@@ -1,15 +1,41 @@
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-let isRefreshing = false;
-let refreshSubscribers = [];
+let accessToken = null;
+let refreshPromise = null;
 
-function subscribeTokenRefresh(cb) {
-  refreshSubscribers.push(cb);
+export function setAccessToken(token) {
+  accessToken = token || null;
 }
 
-function onRefreshed(token) {
-  refreshSubscribers.forEach((cb) => cb(token));
-  refreshSubscribers = [];
+export function clearAccessToken() {
+  accessToken = null;
+}
+
+export async function refreshSession() {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = (async () => {
+    const refreshRes = await fetch(`${BASE_URL}/api/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!refreshRes.ok) {
+      accessToken = null;
+      throw new Error("Refresh token expired");
+    }
+
+    const refreshData = await refreshRes.json();
+    accessToken = refreshData.accessToken;
+    return refreshData;
+  })().finally(() => {
+    refreshPromise = null;
+  });
+
+  return refreshPromise;
 }
 
 export async function apiFetch(endpoint, options = {}) {
@@ -19,64 +45,34 @@ export async function apiFetch(endpoint, options = {}) {
     ...(options.headers || {}),
   };
 
-  const token = localStorage.getItem("accessToken");
-  if (token && !headers["Authorization"]) {
-    headers["Authorization"] = `Bearer ${token}`;
+  if (accessToken && !headers["Authorization"]) {
+    headers["Authorization"] = `Bearer ${accessToken}`;
   }
 
   const response = await fetch(url, {
     ...options,
+    credentials: options.credentials ?? "include",
     headers,
   });
 
-  if (response.status === 401 && !options._retry && !endpoint.includes("/api/auth/login") && !endpoint.includes("/api/auth/refresh")) {
-    const refreshToken = localStorage.getItem("refreshToken");
-    if (!refreshToken) {
-      clearSessionAndRedirect();
-      throw new Error("Sesi telah berakhir, silakan login kembali.");
-    }
-
-    if (isRefreshing) {
-      return new Promise((resolve, reject) => {
-        subscribeTokenRefresh((newToken) => {
-          if (!newToken) return reject(new Error("Gagal memperbarui token."));
-          options._retry = true;
-          options.headers = {
-            ...options.headers,
-            Authorization: `Bearer ${newToken}`,
-          };
-          resolve(apiFetch(endpoint, options));
-        });
-      });
-    }
-
-    isRefreshing = true;
+  if (
+    response.status === 401 &&
+    !options._retry &&
+    !endpoint.includes("/api/auth/login") &&
+    !endpoint.includes("/api/auth/register") &&
+    !endpoint.includes("/api/auth/refresh")
+  ) {
     try {
-      const refreshRes = await fetch(`${BASE_URL}/api/auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken }),
+      const refreshData = await refreshSession();
+      return apiFetch(endpoint, {
+        ...options,
+        _retry: true,
+        headers: {
+          ...options.headers,
+          Authorization: `Bearer ${refreshData.accessToken}`,
+        },
       });
-
-      if (!refreshRes.ok) {
-        throw new Error("Refresh token expired");
-      }
-
-      const refreshData = await refreshRes.json();
-      localStorage.setItem("accessToken", refreshData.accessToken);
-      localStorage.setItem("refreshToken", refreshData.refreshToken);
-      isRefreshing = false;
-      onRefreshed(refreshData.accessToken);
-
-      options._retry = true;
-      options.headers = {
-        ...options.headers,
-        Authorization: `Bearer ${refreshData.accessToken}`,
-      };
-      return apiFetch(endpoint, options);
-    } catch (err) {
-      isRefreshing = false;
-      onRefreshed(null);
+    } catch {
       clearSessionAndRedirect();
       throw new Error("Sesi telah berakhir, silakan login kembali.");
     }
@@ -99,6 +95,7 @@ export async function apiFetch(endpoint, options = {}) {
 }
 
 function clearSessionAndRedirect() {
+  accessToken = null;
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("user");

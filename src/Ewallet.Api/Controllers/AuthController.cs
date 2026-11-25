@@ -11,38 +11,87 @@ namespace Ewallet.Api.Controllers;
 [Route("api/auth")]
 public class AuthController(IAuthService authService, ICurrentUser currentUser) : ControllerBase
 {
+    private const string RefreshTokenCookieName = "refreshToken";
+
+    private void SetRefreshTokenCookie(string refreshToken, DateTime expiresAtUtc)
+    {
+        Response.Cookies.Append(RefreshTokenCookieName, refreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = Request.IsHttps,
+            SameSite = SameSiteMode.Strict,
+            Path = "/api/auth",
+            Expires = new DateTimeOffset(expiresAtUtc, TimeSpan.Zero)
+        });
+    }
+
+    private void DeleteRefreshTokenCookie()
+    {
+        Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = Request.IsHttps,
+            SameSite = SameSiteMode.Strict,
+            Path = "/api/auth"
+        });
+    }
+
     [HttpPost("register")]
     [AllowAnonymous]
     [EnableRateLimiting("auth")]
-    public async Task<ActionResult<AuthResponse>> Register([FromBody] RegisterRequest request, CancellationToken ct)
+    public async Task<ActionResult<ClientAuthResponse>> Register([FromBody] RegisterRequest request, CancellationToken ct)
     {
         var result = await authService.RegisterAsync(request, ct);
-        return StatusCode(StatusCodes.Status201Created, result);
+        SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiresAtUtc);
+        return StatusCode(StatusCodes.Status201Created, new ClientAuthResponse(result.AccessToken, result.AccessTokenExpiresAtUtc, result.User));
     }
 
     [HttpPost("login")]
     [AllowAnonymous]
     [EnableRateLimiting("auth")]
-    public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request, CancellationToken ct)
+    public async Task<ActionResult<ClientAuthResponse>> Login([FromBody] LoginRequest request, CancellationToken ct)
     {
         var result = await authService.LoginAsync(request, ct);
-        return Ok(result);
+        SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiresAtUtc);
+        return Ok(new ClientAuthResponse(result.AccessToken, result.AccessTokenExpiresAtUtc, result.User));
     }
 
     [HttpPost("refresh")]
     [AllowAnonymous]
     [EnableRateLimiting("auth")]
-    public async Task<ActionResult<AuthResponse>> Refresh([FromBody] RefreshTokenRequest request, CancellationToken ct)
+    public async Task<ActionResult<ClientAuthResponse>> Refresh(CancellationToken ct)
     {
-        var result = await authService.RefreshAsync(request.RefreshToken, ct);
-        return Ok(result);
+        var refreshToken = Request.Cookies[RefreshTokenCookieName];
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            DeleteRefreshTokenCookie();
+            throw new UnauthorizedException("Refresh token tidak ditemukan.");
+        }
+
+        try
+        {
+            var result = await authService.RefreshAsync(refreshToken, ct);
+            SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiresAtUtc);
+            return Ok(new ClientAuthResponse(result.AccessToken, result.AccessTokenExpiresAtUtc, result.User));
+        }
+        catch (UnauthorizedException)
+        {
+            DeleteRefreshTokenCookie();
+            throw;
+        }
     }
 
     [HttpPost("logout")]
-    [Authorize]
-    public async Task<IActionResult> Logout([FromBody] RefreshTokenRequest request, CancellationToken ct)
+    [AllowAnonymous]
+    public async Task<IActionResult> Logout(CancellationToken ct)
     {
-        await authService.RevokeAsync(request.RefreshToken, ct);
+        var refreshToken = Request.Cookies[RefreshTokenCookieName];
+        if (!string.IsNullOrWhiteSpace(refreshToken))
+        {
+            await authService.RevokeAsync(refreshToken, ct);
+        }
+
+        DeleteRefreshTokenCookie();
         return NoContent();
     }
 

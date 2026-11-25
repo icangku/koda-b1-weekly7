@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { TopHeader } from "@/components/dashboard/TopHeader";
 import { useAuth } from "@/context/AuthContext";
@@ -245,22 +245,24 @@ export function ActivitiesPage() {
             <div className="flex gap-2">
               <button
                 type="button"
+                aria-label="Sebelumnya"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="rounded-md border border-slate-200 px-3 py-1.5 hover:bg-slate-50 disabled:opacity-40"
+                className="flex items-center justify-center rounded-md border border-slate-200 p-1.5 hover:bg-slate-50 disabled:opacity-40"
               >
-                Sebelumnya
+                <ChevronLeft className="h-4 w-4" />
               </button>
               <span className="flex items-center px-2 font-medium">
                 Halaman {page} dari {totalPages}
               </span>
               <button
                 type="button"
+                aria-label="Selanjutnya"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="rounded-md border border-slate-200 px-3 py-1.5 hover:bg-slate-50 disabled:opacity-40"
+                className="flex items-center justify-center rounded-md border border-slate-200 p-1.5 hover:bg-slate-50 disabled:opacity-40"
               >
-                Selanjutnya
+                <ChevronRight className="h-4 w-4" />
               </button>
             </div>
           </div>
