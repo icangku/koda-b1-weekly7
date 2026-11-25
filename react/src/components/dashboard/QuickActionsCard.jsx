@@ -4,15 +4,15 @@ import { Button } from "@/components/ui/button";
 
 export function QuickActionsCard({ onTopUp, onTransfer }) {
   return (
-    <Card className="flex h-full flex-col justify-between rounded-2xl border-slate-200/70 bg-white py-6 shadow-2xs">
-      <div className="px-6">
+    <Card className="flex h-full flex-col justify-between rounded-2xl border-slate-200/70 bg-white p-5 sm:p-6 shadow-2xs">
+      <div>
         <h2 className="text-base font-bold text-slate-900">Aksi cepat</h2>
         <p className="mt-0.5 text-xs text-slate-500">
           Transaksi yang sering digunakan
         </p>
       </div>
 
-      <CardContent className="mt-5 flex flex-col gap-2.5 px-6 pb-0">
+      <CardContent className="mt-4 flex flex-col gap-2.5 p-0 sm:mt-5">
         <Button
           type="button"
           onClick={onTopUp}

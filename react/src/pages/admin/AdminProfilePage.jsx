@@ -110,8 +110,8 @@ export function AdminProfilePage() {
       />
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-        <Card className="rounded-2xl border-slate-200/70 bg-white py-7 shadow-2xs lg:col-span-8">
-          <CardContent className="px-7">
+        <Card className="rounded-2xl border-slate-200/70 bg-white py-5 sm:py-7 shadow-2xs lg:col-span-8">
+          <CardContent className="px-4 sm:px-7">
             <h2 className="text-base font-bold text-slate-900">
               Informasi profil administrator
             </h2>

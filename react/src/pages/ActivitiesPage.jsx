@@ -125,15 +125,15 @@ export function ActivitiesPage() {
         initials={initials}
       />
 
-      <Card className="rounded-2xl border-slate-200/70 bg-white py-7 shadow-2xs">
-        <CardContent className="px-7">
+      <Card className="rounded-2xl border-slate-200/70 bg-white py-5 sm:py-7 shadow-2xs">
+        <CardContent className="px-4 sm:px-7">
           <h2 className="text-base font-bold text-slate-900">
             Riwayat transaksi
           </h2>
 
           {/* Filter Bar */}
-          <form onSubmit={handleSearchSubmit} className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-12">
-            <div className="md:col-span-6">
+          <form onSubmit={handleSearchSubmit} className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-12">
+            <div className="sm:col-span-6">
               <input
                 type="text"
                 value={searchRef}
@@ -143,7 +143,7 @@ export function ActivitiesPage() {
               />
             </div>
 
-            <div className="relative md:col-span-3">
+            <div className="relative sm:col-span-3">
               <select
                 value={typeFilter}
                 onChange={(e) => {
@@ -159,7 +159,7 @@ export function ActivitiesPage() {
               <ChevronDown className="pointer-events-none absolute top-3 right-2.5 h-4 w-4 text-slate-400" />
             </div>
 
-            <div className="relative md:col-span-3">
+            <div className="relative sm:col-span-3">
               <select
                 value={statusFilter}
                 onChange={(e) => {
@@ -197,26 +197,28 @@ export function ActivitiesPage() {
               transactions.map((item) => (
                 <div
                   key={item.id}
-                  className="grid grid-cols-1 items-center gap-2 py-4 sm:grid-cols-12 sm:gap-4"
+                  className="flex items-center justify-between gap-3 py-3.5 sm:grid sm:grid-cols-12 sm:gap-4"
                 >
-                  <div className="sm:col-span-5">
-                    <p className="text-sm font-semibold text-slate-900">
+                  <div className="min-w-0 flex-1 sm:col-span-5">
+                    <p className="truncate text-sm font-semibold text-slate-900">
                       {item.title}
                     </p>
                     <p className="mt-0.5 text-[11px] text-slate-400">
-                      {item.timestamp} · {item.refCode}
+                      {item.timestamp} <span className="sm:hidden">· {item.category}</span> · {item.refCode}
                     </p>
                   </div>
 
-                  <div className="text-xs text-slate-500 sm:col-span-2">
+                  <div className="hidden text-xs text-slate-500 sm:block sm:col-span-2">
                     {item.category}
                   </div>
 
-                  <div className="text-xs font-bold text-slate-900 sm:col-span-3 sm:text-right">
-                    {item.amount}
+                  <div className="text-right sm:col-span-3">
+                    <p className="text-xs font-bold text-slate-900 sm:text-sm">
+                      {item.amount}
+                    </p>
                   </div>
 
-                  <div className="sm:col-span-2 sm:text-right">
+                  <div className="text-right sm:col-span-2">
                     <span
                       className={cn(
                         "inline-flex rounded-md px-2.5 py-1 text-[11px] font-semibold",

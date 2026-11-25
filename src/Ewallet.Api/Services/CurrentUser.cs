@@ -1,6 +1,6 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Ewallet.Application.Interfaces;
+using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace Ewallet.Api.Services;
 

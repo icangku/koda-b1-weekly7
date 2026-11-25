@@ -3,6 +3,7 @@ using Ewallet.Application.Exceptions;
 using Ewallet.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Ewallet.Api.Controllers;
 
@@ -12,6 +13,7 @@ public class AuthController(IAuthService authService, ICurrentUser currentUser) 
 {
     [HttpPost("register")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public async Task<ActionResult<AuthResponse>> Register([FromBody] RegisterRequest request, CancellationToken ct)
     {
         var result = await authService.RegisterAsync(request, ct);
@@ -20,6 +22,7 @@ public class AuthController(IAuthService authService, ICurrentUser currentUser) 
 
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request, CancellationToken ct)
     {
         var result = await authService.LoginAsync(request, ct);
@@ -28,6 +31,7 @@ public class AuthController(IAuthService authService, ICurrentUser currentUser) 
 
     [HttpPost("refresh")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public async Task<ActionResult<AuthResponse>> Refresh([FromBody] RefreshTokenRequest request, CancellationToken ct)
     {
         var result = await authService.RefreshAsync(request.RefreshToken, ct);
@@ -61,6 +65,7 @@ public class AuthController(IAuthService authService, ICurrentUser currentUser) 
 
     [HttpPost("change-password")]
     [Authorize]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken ct)
     {
         var userId = currentUser.UserId ?? throw new UnauthorizedException("Token tidak valid.");
@@ -70,11 +75,13 @@ public class AuthController(IAuthService authService, ICurrentUser currentUser) 
 
     [HttpPost("forgot-password")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public async Task<ActionResult<ForgotPasswordResponse>> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken ct)
         => Ok(await authService.ForgotPasswordAsync(request, ct));
 
     [HttpPost("reset-password")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken ct)
     {
         await authService.ResetPasswordAsync(request, ct);

@@ -6,6 +6,7 @@ import {
   Settings,
   LogOut,
   ShieldAlert,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,17 +25,57 @@ export function Sidebar({
   onHelpClick,
   isAdmin = false,
   onGoToAdmin,
+  onClose,
+  className,
 }) {
+  const handleSelect = (id) => {
+    onSelectTab?.(id);
+    onClose?.();
+  };
+
+  const handleLogout = () => {
+    onLogout?.();
+    onClose?.();
+  };
+
+  const handleAdmin = () => {
+    onGoToAdmin?.();
+    onClose?.();
+  };
+
+  const handleHelp = () => {
+    onHelpClick?.();
+    onClose?.();
+  };
+
   return (
-    <aside className="flex w-60 shrink-0 flex-col justify-between border-r border-slate-200/80 bg-white">
+    <aside
+      className={cn(
+        "flex w-60 shrink-0 flex-col justify-between border-r border-slate-200/80 bg-white",
+        className
+      )}
+    >
       <div>
-        <div className="flex items-center gap-2.5 px-5 py-5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0d5c52] text-sm font-bold text-white">
-            k
+        <div className="flex items-center justify-between px-5 py-5">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0d5c52] text-sm font-bold text-white">
+              k
+            </div>
+            <span className="text-lg font-bold tracking-tight text-slate-900">
+              koda <span className="font-semibold text-[#0d5c52]">wallet</span>
+            </span>
           </div>
-          <span className="text-lg font-bold tracking-tight text-slate-900">
-            koda <span className="font-semibold text-[#0d5c52]">wallet</span>
-          </span>
+
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 md:hidden"
+              aria-label="Tutup menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
         </div>
 
         <div className="px-5 pt-2 pb-2">
@@ -52,7 +93,7 @@ export function Sidebar({
               <button
                 key={item.id}
                 type="button"
-                onClick={() => onSelectTab?.(item.id)}
+                onClick={() => handleSelect(item.id)}
                 className={cn(
                   "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                   isActive
@@ -74,7 +115,7 @@ export function Sidebar({
           {isAdmin && (
             <button
               type="button"
-              onClick={onGoToAdmin}
+              onClick={handleAdmin}
               className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-50"
             >
               <ShieldAlert className="h-4 w-4 shrink-0 text-amber-600" />
@@ -84,7 +125,7 @@ export function Sidebar({
 
           <button
             type="button"
-            onClick={onLogout}
+            onClick={handleLogout}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
           >
             <LogOut className="h-4 w-4 shrink-0 text-slate-400" />
@@ -96,7 +137,7 @@ export function Sidebar({
       <div className="p-4">
         <button
           type="button"
-          onClick={onHelpClick}
+          onClick={handleHelp}
           className="w-full rounded-xl border border-emerald-900/10 bg-[#f2f8f6] p-3.5 text-left transition-colors hover:bg-[#e8f3f0]"
         >
           <p className="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">

@@ -7,12 +7,12 @@ export function WalletBalanceCard({
 }) {
   return (
     <Card className="h-full rounded-2xl border-0 bg-[#0d5c52] py-0 text-white shadow-2xs">
-      <CardContent className="flex h-full flex-col justify-between p-7">
+      <CardContent className="flex h-full flex-col justify-between p-5 sm:p-7">
         <p className="text-[11px] font-semibold tracking-widest text-emerald-100/80 uppercase">
           Saldo Tersedia
         </p>
 
-        <div className="my-5 text-4xl font-bold tracking-tight sm:text-[42px]">
+        <div className="my-4 text-3xl font-bold tracking-tight break-words sm:my-5 sm:text-4xl lg:text-[42px]">
           {balanceFormatted}
         </div>
 

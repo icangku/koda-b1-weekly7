@@ -122,6 +122,12 @@ function AdminUserDetailRouteWrapper() {
   );
 }
 
+function RootRedirect() {
+  const { user, isAdmin } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  return <Navigate to={isAdmin ? "/admin" : "/dashboard"} replace />;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -154,8 +160,8 @@ export default function App() {
           </Route>
 
           {/* Default and Fallback */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<RootRedirect />} />
+          <Route path="*" element={<RootRedirect />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

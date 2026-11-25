@@ -1,9 +1,8 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Ewallet.Infrastructure.Identity;
@@ -15,7 +14,9 @@ internal interface IJwtTokenGenerator
 
 internal sealed class JwtTokenGenerator(IOptions<JwtOptions> jwtOptions, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole<long>> roleManager) : IJwtTokenGenerator
 {
+  private static readonly JsonWebTokenHandler TokenHandler = new();
   private readonly JwtOptions _jwt = jwtOptions.Value;
+
   public async Task<(string Token, DateTime ExpiresAtUtc)> GenerateAsync(ApplicationUser user)
   {
     var roles = await userManager.GetRolesAsync(user);
@@ -53,13 +54,17 @@ internal sealed class JwtTokenGenerator(IOptions<JwtOptions> jwtOptions, UserMan
     var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
     var expiresAtUtc = DateTime.UtcNow.AddMinutes(_jwt.ExpiryMinutes);
 
-    var token = new JwtSecurityToken(
-        issuer: _jwt.Issuer,
-        audience: _jwt.Audience,
-        claims: distinctClaims,
-        expires: expiresAtUtc,
-        signingCredentials: credentials);
+    var tokenDescriptor = new SecurityTokenDescriptor
+    {
+        Issuer = _jwt.Issuer,
+        Audience = _jwt.Audience,
+        Subject = new ClaimsIdentity(distinctClaims),
+        Expires = expiresAtUtc,
+        SigningCredentials = credentials
+    };
 
-    return (new JwtSecurityTokenHandler().WriteToken(token), expiresAtUtc);
+    var token = TokenHandler.CreateToken(tokenDescriptor);
+
+    return (token, expiresAtUtc);
   }
 }

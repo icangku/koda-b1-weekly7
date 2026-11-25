@@ -20,5 +20,10 @@ export function ProtectedRoute({ requireAdmin = false }) {
     return <Navigate to="/forbidden" replace />;
   }
 
+  // Admin tidak memiliki akun dompet, arahkan ke area admin jika mencoba mengakses rute dompet
+  if (!requireAdmin && isAdmin) {
+    return <Navigate to="/admin" replace />;
+  }
+
   return <Outlet />;
 }

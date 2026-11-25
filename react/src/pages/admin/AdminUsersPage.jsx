@@ -76,8 +76,8 @@ export function AdminUsersPage({ onSelectUser }) {
         initials="AD"
       />
 
-      <Card className="rounded-2xl border-slate-200/70 bg-white py-7 shadow-2xs">
-        <CardContent className="px-7">
+      <Card className="rounded-2xl border-slate-200/70 bg-white py-5 sm:py-7 shadow-2xs">
+        <CardContent className="px-4 sm:px-7">
           <h2 className="text-base font-bold text-slate-900">
             Daftar pengguna
           </h2>
@@ -86,8 +86,8 @@ export function AdminUsersPage({ onSelectUser }) {
           </p>
 
           {/* Search & Filter */}
-          <form onSubmit={handleSearchSubmit} className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-12">
-            <div className="md:col-span-8">
+          <form onSubmit={handleSearchSubmit} className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-12">
+            <div className="sm:col-span-8">
               <input
                 type="text"
                 value={query}
@@ -97,7 +97,7 @@ export function AdminUsersPage({ onSelectUser }) {
               />
             </div>
 
-            <div className="relative md:col-span-4">
+            <div className="relative sm:col-span-4">
               <select
                 value={statusFilter}
                 onChange={(e) => {
@@ -137,30 +137,30 @@ export function AdminUsersPage({ onSelectUser }) {
                   <div
                     key={user.id}
                     onClick={() => onSelectUser?.(user)}
-                    className="grid cursor-pointer grid-cols-1 items-center gap-2 py-4 transition-colors hover:bg-slate-50/70 sm:grid-cols-12 sm:gap-4"
+                    className="flex cursor-pointer items-center justify-between gap-3 py-3.5 transition-colors hover:bg-slate-50/70 sm:grid sm:grid-cols-12 sm:gap-4"
                   >
-                    <div className="sm:col-span-4">
-                      <p className="text-sm font-semibold text-slate-900">
+                    <div className="min-w-0 flex-1 sm:col-span-4">
+                      <p className="truncate text-sm font-semibold text-slate-900">
                         {user.name}
                       </p>
-                      <p className="mt-0.5 text-xs text-slate-400">
-                        {user.handle}
+                      <p className="mt-0.5 truncate text-xs text-slate-400">
+                        {user.handle} <span className="sm:hidden">· {user.email}</span>
                       </p>
                     </div>
 
-                    <div className="text-xs text-slate-500 sm:col-span-4">
-                      <p>{user.email}</p>
+                    <div className="hidden text-xs text-slate-500 sm:block sm:col-span-4">
+                      <p className="truncate">{user.email}</p>
                       <p className="mt-0.5 text-slate-400">{user.phone}</p>
                     </div>
 
-                    <div className="text-xs text-slate-500 sm:col-span-2">
+                    <div className="hidden text-xs text-slate-500 sm:block sm:col-span-2">
                       <span className="font-mono">{user.walletNumber}</span>
                     </div>
 
-                    <div className="sm:col-span-2 sm:text-right">
+                    <div className="text-right sm:col-span-2">
                       <span
                         className={cn(
-                          "inline-flex rounded-md px-3 py-1 text-[11px] font-semibold",
+                          "inline-flex rounded-md px-2.5 py-1 text-[11px] font-semibold",
                           isSuspended
                             ? "bg-rose-50 text-rose-500"
                             : "bg-[#edf6f4] text-[#0d5c52]",

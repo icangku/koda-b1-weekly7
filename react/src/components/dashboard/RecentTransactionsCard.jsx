@@ -3,8 +3,8 @@ import { cn } from "@/lib/utils";
 
 export function RecentTransactionsCard({ activities = [], onViewAll }) {
   return (
-    <Card className="rounded-2xl border-slate-200/70 bg-white py-6 shadow-2xs">
-      <div className="mb-4 flex items-start justify-between gap-4 px-6">
+    <Card className="rounded-2xl border-slate-200/70 bg-white py-5 sm:py-6 shadow-2xs">
+      <div className="mb-4 flex items-start justify-between gap-4 px-4 sm:px-6">
         <div>
           <h2 className="text-base font-bold text-slate-900">
             Aktivitas terakhir
@@ -23,33 +23,35 @@ export function RecentTransactionsCard({ activities = [], onViewAll }) {
         </button>
       </div>
 
-      <CardContent className="divide-y divide-slate-100 px-6 pb-0">
+      <CardContent className="divide-y divide-slate-100 px-4 sm:px-6 pb-0">
         {activities.map((item) => (
           <div
             key={item.id}
-            className="grid grid-cols-1 items-center gap-2 py-3.5 first:pt-2 last:pb-1 sm:grid-cols-12 sm:gap-4"
+            className="flex items-center justify-between gap-3 py-3.5 first:pt-2 last:pb-1 sm:grid sm:grid-cols-12 sm:gap-4"
           >
-            <div className="sm:col-span-5">
-              <p className="text-sm font-semibold text-slate-900">
+            <div className="min-w-0 flex-1 sm:col-span-5">
+              <p className="truncate text-sm font-semibold text-slate-900">
                 {item.title}
               </p>
               <p className="mt-0.5 text-[11px] text-slate-400">
-                {item.timestamp}
+                {item.timestamp} <span className="sm:hidden">· {item.category}</span>
               </p>
             </div>
 
-            <div className="text-xs text-slate-500 sm:col-span-3">
+            <div className="hidden text-xs text-slate-500 sm:block sm:col-span-3">
               {item.category}
             </div>
 
-            <div className="text-xs font-bold text-slate-900 sm:col-span-2 sm:text-right">
-              {item.amountFormatted}
+            <div className="text-right sm:col-span-2">
+              <p className="text-xs font-bold text-slate-900 sm:text-sm">
+                {item.amountFormatted}
+              </p>
             </div>
 
-            <div className="sm:col-span-2 sm:text-right">
+            <div className="text-right sm:col-span-2">
               <span
                 className={cn(
-                  "text-xs font-semibold",
+                  "text-[11px] font-semibold sm:text-xs",
                   item.status === "Berhasil"
                     ? "text-emerald-700"
                     : "text-slate-600",

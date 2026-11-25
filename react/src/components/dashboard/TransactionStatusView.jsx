@@ -18,10 +18,10 @@ export function TransactionStatusView({
   currentBalanceText,
 }) {
   return (
-    <div className="min-h-screen bg-[#f9fbfa] px-6 py-7 text-slate-900">
+    <div className="min-h-screen bg-[#f9fbfa] px-4 py-5 sm:px-6 sm:py-7 text-slate-900">
       <div className="mx-auto max-w-5xl">
         {/* Top Brand */}
-        <div className="mb-10">
+        <div className="mb-6 sm:mb-10">
           <span className="text-base font-bold tracking-tight text-slate-900">
             koda <span className="font-semibold text-[#0d5c52]">wallet</span>
           </span>
@@ -39,8 +39,8 @@ export function TransactionStatusView({
             </button>
           )}
 
-          <Card className="rounded-2xl border-slate-200/70 bg-white py-7 shadow-2xs">
-            <CardContent className="px-7">
+          <Card className="rounded-2xl border-slate-200/70 bg-white py-5 sm:py-7 shadow-2xs">
+            <CardContent className="px-4 sm:px-7">
               {mode === "success" ? (
                 <div className="flex flex-col items-center text-center">
                   <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#edf6f4] text-[#0d5c52]">
